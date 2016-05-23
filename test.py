@@ -5,5 +5,9 @@ sys.path.append("zk")
 import zk
 
 zk = zk.ZK('192.168.1.201')
-print zk.connect()
-print zk.disconnect()
+status, message = zk.connect()
+if status:
+    print 'Firmware Version: : {}'.format(zk.get_firmware_version())
+    print zk.disconnect()
+else:
+    print message

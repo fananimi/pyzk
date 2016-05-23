@@ -103,6 +103,19 @@ class ZK(object):
         except Exception, e:
             return (False, e)
 
+    def get_firmware_version(self):
+        command = const.CMD_GET_VERSION
+        try:
+            buf = self.__create_header(command=command, session_id=self.__sesion_id, reply_id=self.__reply_id)
+            self.__sock.sendto(buf, self.__address)
+            self.__data_recv, addr = self.__sock.recvfrom(1024)
+            if self.__response == const.CMD_ACK_OK:
+                return self.__data_recv[8:]
+            else:
+                return (False, self.__response)
+        except Exception, e:
+            return (False, e)
+
     def restart(self):
         '''
         shutdown device
