@@ -9,7 +9,6 @@ class ZK(object):
     __data_recv = None
 
     def __init__(self, ip, port=4370, timeout=5):
-        self.address = (ip, port)
         self.__address = (ip, port)
         self.__sock = socket(AF_INET, SOCK_DGRAM)
         self.__sock.settimeout(timeout)
@@ -77,7 +76,7 @@ class ZK(object):
         command = const.CMD_CONNECT
         try:
             buf = self.__create_header(command=command)
-            self.__sock.sendto(buf, self.address)
+            self.__sock.sendto(buf, self.__address)
             self.__data_recv, addr = self.__sock.recvfrom(1024)
 
             if self.__response == const.CMD_ACK_OK:
