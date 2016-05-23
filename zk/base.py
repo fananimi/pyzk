@@ -13,45 +13,73 @@ class ZK(object):
         self.__sock = socket(AF_INET, SOCK_DGRAM)
         self.__sock.settimeout(timeout)
 
-    def __create_header(self, command, chksum=0, session_id=0, reply_id=65534,  command_string=''):
+    def __create_header(self, command, checksum=0, session_id=0, reply_id=65534,  command_string=''):
         '''
         Puts a the parts that make up a packet together and packs them into a byte string
         '''
-        buf = pack('HHHH', command, chksum, session_id, reply_id) + command_string        
+        buf = pack('HHHH', command, checksum, session_id, reply_id) + command_string        
         buf = unpack('8B'+'%sB' % len(command_string), buf)
-        chksum = unpack('H', self.__create_checksum(buf))[0]
+        checksum = unpack('H', self.__create_checksum(buf))[0]
         reply_id += 1
         if reply_id >= const.USHRT_MAX:
             reply_id -= const.USHRT_MAX
 
-        buf = pack('HHHH', command, chksum, session_id, reply_id)
+        buf = pack('HHHH', command, checksum, session_id, reply_id)
         return buf + command_string
 
     def __create_checksum(self, p):
         '''
-        Calculates the chksum of the packet to be sent to the time clock
+        Calculates the checksum of the packet to be sent to the time clock
         Copied from zkemsdk.c
         '''
         l = len(p)
-        chksum = 0
+        checksum = 0
         while l > 1:
-            chksum += unpack('H', pack('BB', p[0], p[1]))[0]
+            checksum += unpack('H', pack('BB', p[0], p[1]))[0]
             p = p[2:]
-            if chksum > const.USHRT_MAX:
-                chksum -= const.USHRT_MAX
+            if checksum > const.USHRT_MAX:
+                checksum -= const.USHRT_MAX
             l -= 2
         if l:
-            chksum = chksum + p[-1]
+            checksum = checksum + p[-1]
             
-        while chksum > const.USHRT_MAX:
-            chksum -= const.USHRT_MAX
+        while checksum > const.USHRT_MAX:
+            checksum -= const.USHRT_MAX
         
-        chksum = ~chksum
+        checksum = ~checksum
         
-        while chksum < 0:
-            chksum += const.USHRT_MAX
+        while checksum < 0:
+            checksum += const.USHRT_MAX
 
-        return pack('H', chksum)
+        return pack('H', checksum)
+
+    def __send_command(self, command, checksum=0, command_string='', response_size=8):
+        try:
+            buf = self.__create_header(command, checksum, self.__sesion_id, self.__reply_id,  command_string)
+            self.__sending_packet(buf)
+            self.__receive_packet(response_size)
+
+            if self.__response == const.CMD_ACK_OK:
+                return {
+                    'status': True,
+                    'code': self.__response,
+                    'message': 'success',
+                    'data': self.__data_recv
+                }
+            else:
+                return {
+                    'status': False,
+                    'code': self.__response,
+                    'message': 'failed',
+                    'data': self.__data_recv
+                }
+        except Exception, e:
+            return {
+                'status': False,
+                'code': const.CMD_ACK_ERROR,
+                'message': str(e),
+                'data': ''
+            }
 
     def __sending_packet(self, buf):
         self.__sock.sendto(buf, self.__address)
@@ -68,10 +96,14 @@ class ZK(object):
 
     @property
     def __sesion_id(self):
+        if not self.__data_recv:
+            return 0
         return unpack('HHHH', self.__data_recv[:8])[2]
 
     @property
     def __reply_id(self):
+        if not self.__data_recv:
+            return const.USHRT_MAX - 1
         return unpack('HHHH', self.__data_recv[:8])[3]
 
     def connect(self):
@@ -80,17 +112,13 @@ class ZK(object):
         '''
 
         command = const.CMD_CONNECT
-        try:
-            buf = self.__create_header(command=command)
-            self.__sending_packet(buf)
-            self.__receive_packet(8)
-
-            if self.__response == const.CMD_ACK_OK:
-                return (True, self.__response)
-            else:
-                return (False, self.__response)
-        except Exception, e:
-            return (False, e)
+        cmd_response = self.__send_command(command)
+        cmd_response['data'] = ''
+        if cmd_response.get('status'):
+            cmd_response['message'] = 'connected'
+            return cmd_response
+        else:
+            return cmd_response
 
     def disconnect(self):
         '''
@@ -98,30 +126,23 @@ class ZK(object):
         '''
 
         command = const.CMD_EXIT
-        try:
-            buf = self.__create_header(command=command, session_id=self.__sesion_id, reply_id=self.__reply_id)
-            self.__sending_packet(buf)
-            self.__receive_packet(8)
-            if self.__response == const.CMD_ACK_OK:
-                return (True, self.__response)
-            else:
-                return (False, self.__response)
-        except Exception, e:
-            return (False, e)
+        cmd_response = self.__send_command(command)
+        cmd_response['data'] = ''
+        if cmd_response.get('status'):
+            cmd_response['message'] = 'disconnected'
+            return cmd_response
+        else:
+            return cmd_response
 
     def get_firmware_version(self):
         command = const.CMD_GET_VERSION
-        try:
-            buf = self.__create_header(command=command, session_id=self.__sesion_id, reply_id=self.__reply_id)
-            self.__sending_packet(buf)
-            self.__receive_packet(1024)
-            if self.__response == const.CMD_ACK_OK:
-                version = self.__data_recv[8:]
-                return version
-            else:
-                return (False, self.__response)
-        except Exception, e:
-            return (False, e)
+        cmd_response = self.__send_command(command, response_size=1024)
+        if cmd_response.get('status'):
+            cmd_response['data'] = cmd_response.get('data')[8:].strip('\x00|\x01\x10x')
+            return cmd_response
+        else:
+            cmd_response['data'] = ''
+            return cmd_response
 
     def restart(self):
         '''
@@ -129,16 +150,13 @@ class ZK(object):
         '''
 
         command = const.CMD_RESTART
-        try:
-            buf = self.__create_header(command=command, session_id=self.__sesion_id, reply_id=self.__reply_id)
-            self.__sending_packet(buf)
-            self.__receive_packet(8)
-            if self.__response == const.CMD_ACK_OK:
-                return (True, self.__response)
-            else:
-                return (False, self.__response)
-        except Exception, e:
-            return (False, e)
+        cmd_response = self.__send_command(command)
+        cmd_response['data'] = ''
+        if cmd_response.get('status'):
+            cmd_response['message'] = 'device restarted'
+            return cmd_response
+        else:
+            return cmd_response
 
     def power_off(self):
         '''
@@ -146,79 +164,76 @@ class ZK(object):
         '''
 
         command = const.CMD_POWEROFF
-        try:
-            buf = self.__create_header(command=command, session_id=self.__sesion_id, reply_id=self.__reply_id)
-            self.__sending_packet(buf)
-            self.__receive_packet(8)
-            if self.__response == const.CMD_ACK_OK:
-                return (True, self.__response)
-            else:
-                return (False, self.__response)
-        except Exception, e:
-            return (False, e)
-
-    def __get_size_user(self):
-        """Checks a returned packet to see if it returned CMD_PREPARE_DATA,
-        indicating that data packets are to be sent
-
-        Returns the amount of bytes that are going to be sent"""
-        response = self.__response
-        if response == const.CMD_PREPARE_DATA:
-            size = unpack('I', self.__data_recv[8:12])[0]
-            return size
+        cmd_response = self.__send_command(command)
+        cmd_response['data'] = ''
+        if cmd_response.get('status'):
+            cmd_response['message'] = 'device turning off'
+            return cmd_response
         else:
-            return 0
+            return cmd_response
 
-    def get_users(self):
-        command = const.CMD_USERTEMP_RRQ
-        command_string = chr(5)
+    # def __get_size_user(self):
+    #     """Checks a returned packet to see if it returned CMD_PREPARE_DATA,
+    #     indicating that data packets are to be sent
 
-        try:
-            buf = self.__create_header(command=command, session_id=self.__sesion_id, reply_id=self.__reply_id, command_string=command_string)
-            self.__sending_packet(buf)
-            self.__receive_packet(1024)
+    #     Returns the amount of bytes that are going to be sent"""
+    #     response = self.__response
+    #     if response == const.CMD_PREPARE_DATA:
+    #         size = unpack('I', self.__data_recv[8:12])[0]
+    #         return size
+    #     else:
+    #         return 0
 
-            bytes = self.__get_size_user()
-            userdata = []
+    # def get_users(self):
+    #     command = const.CMD_USERTEMP_RRQ
+    #     command_string = chr(5)
 
-            if bytes:
-                while bytes > 0:
-                    data_recv, addr = self.__sock.recvfrom(1032)
-                    userdata.append(data_recv)
-                    bytes -= 1024
+    #     try:
+    #         buf = self.__create_header(command=command, session_id=self.__sesion_id, reply_id=self.__reply_id, command_string=command_string)
+    #         self.__sending_packet(buf)
+    #         self.__receive_packet(1024)
 
-                self.__receive_packet(8)
+    #         bytes = self.__get_size_user()
+    #         userdata = []
 
-            users = {}
-            if len(userdata) > 0:
-                # The first 4 bytes don't seem to be related to the user
-                for x in xrange(len(userdata)):
-                    if x > 0:
-                        userdata[x] = userdata[x][8:]
+    #         if bytes:
+    #             while bytes > 0:
+    #                 data_recv, addr = self.__sock.recvfrom(1032)
+    #                 userdata.append(data_recv)
+    #                 bytes -= 1024
 
-                userdata = ''.join(userdata)
-                userdata = userdata[11:]
+    #             self.__receive_packet(8)
 
-                while len(userdata) > 72:
-                    uid, role, password, name, userid = unpack( '2s2s8s28sx31s', userdata.ljust(72)[:72])
+    #         users = {}
+    #         if len(userdata) > 0:
+    #             # The first 4 bytes don't seem to be related to the user
+    #             for x in xrange(len(userdata)):
+    #                 if x > 0:
+    #                     userdata[x] = userdata[x][8:]
 
-                    uid = int( uid.encode("hex"), 16)
-                    # Clean up some messy characters from the user name
-                    password = password.split('\x00', 1)[0]
-                    password = unicode(password.strip('\x00|\x01\x10x'), errors='ignore')
+    #             userdata = ''.join(userdata)
+    #             userdata = userdata[11:]
 
-                    userid = unicode(userid.strip('\x00|\x01\x10x'), errors='ignore')
+    #             while len(userdata) > 72:
+    #                 uid, role, password, name, userid = unpack( '2s2s8s28sx31s', userdata.ljust(72)[:72])
 
-                    name = name.split('\x00', 1)[0]
+    #                 uid = int( uid.encode("hex"), 16)
+    #                 # Clean up some messy characters from the user name
+    #                 password = password.split('\x00', 1)[0]
+    #                 password = unicode(password.strip('\x00|\x01\x10x'), errors='ignore')
 
-                    if not name:
-                        name = uid
+    #                 userid = unicode(userid.strip('\x00|\x01\x10x'), errors='ignore')
 
-                    users[uid] = (userid, name, int( role.encode("hex"), 16 ), password)
+    #                 name = name.split('\x00', 1)[0]
 
-                    userdata = userdata[72:]
+    #                 if not name:
+    #                     name = uid
 
-            return users
-        except Exception, e:
-            return (False, e)
+    #                 users[uid] = (userid, name, int( role.encode("hex"), 16 ), password)
+
+    #                 userdata = userdata[72:]
+
+    #         return users
+    #     except Exception, e:
+    #         return (False, e)
 

@@ -5,18 +5,30 @@ sys.path.append("zk")
 import zk
 
 zk = zk.ZK('192.168.1.201')
-status, message = zk.connect()
-if status:
+print 'Connecting to device ...'
+conn = zk.connect()
+if conn.get('status'):
+    print conn
     print 'Firmware Version: : {}'.format(zk.get_firmware_version())
-    users = zk.get_users()
-    if users:
-        for uid in users:        
-            if users[uid][2] == 14:
-                level = 'Admin'
-            else:
-                level = 'User'
-            print "[UID %d]: ID: %s, Name: %s, Level: %s, Password: %s" % ( uid, users[uid][0], users[uid][1], level, users[uid][3]  )
+    # print 'Restarting device'
+    # print zk.restart()
+    # print 'Turning off device'
+    # print zk.power_off()
+#     # users = zk.get_users()
+#     # if users:
+#     #     for uid in users:        
+#     #         if users[uid][2] == 14:
+#     #             level = 'Admin'
+#     #         else:
+#     #             level = 'User'
+#     #         print "[UID %d]: ID: %s, Name: %s, Level: %s, Password: %s" % ( uid, users[uid][0], users[uid][1], level, users[uid][3]  )
 
+    print 'Disconnecting to device ...'
     print zk.disconnect()
+#     if status:
+#         print 'Disonnected !'
+#     else:
+#         print 'Disconnecting Error: {}'.format(message)
 else:
-    print message
+    print 'Connecting Error: {}'.format(conn.get('message'))
+
