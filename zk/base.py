@@ -53,6 +53,10 @@ class ZK(object):
 
         return pack('H', chksum)
 
+    def __sending_packet(self, buf):
+        self.__sock.sendto(buf, self.__address)
+        self.__data_recv, addr = self.__sock.recvfrom(1024)
+
     @property
     def __response(self):
         '''
@@ -76,8 +80,7 @@ class ZK(object):
         command = const.CMD_CONNECT
         try:
             buf = self.__create_header(command=command)
-            self.__sock.sendto(buf, self.__address)
-            self.__data_recv, addr = self.__sock.recvfrom(1024)
+            self.__sending_packet(buf)
 
             if self.__response == const.CMD_ACK_OK:
                 return (True, self.__response)
@@ -94,8 +97,7 @@ class ZK(object):
         command = const.CMD_EXIT
         try:
             buf = self.__create_header(command=command, session_id=self.__sesion_id, reply_id=self.__reply_id)
-            self.__sock.sendto(buf, self.__address)
-            self.__data_recv, addr = self.__sock.recvfrom(1024)
+            self.__sending_packet(buf)
             if self.__response == const.CMD_ACK_OK:
                 return (True, self.__response)
             else:
@@ -107,8 +109,7 @@ class ZK(object):
         command = const.CMD_GET_VERSION
         try:
             buf = self.__create_header(command=command, session_id=self.__sesion_id, reply_id=self.__reply_id)
-            self.__sock.sendto(buf, self.__address)
-            self.__data_recv, addr = self.__sock.recvfrom(1024)
+            self.__sending_packet(buf)
             if self.__response == const.CMD_ACK_OK:
                 return self.__data_recv[8:]
             else:
@@ -124,8 +125,7 @@ class ZK(object):
         command = const.CMD_RESTART
         try:
             buf = self.__create_header(command=command, session_id=self.__sesion_id, reply_id=self.__reply_id)
-            self.__sock.sendto(buf, self.__address)
-            self.__data_recv, addr = self.__sock.recvfrom(1024)
+            self.__sending_packet(buf)
             if self.__response == const.CMD_ACK_OK:
                 return (True, self.__response)
             else:
@@ -142,8 +142,7 @@ class ZK(object):
         command = const.CMD_POWEROFF
         try:
             buf = self.__create_header(command=command, session_id=self.__sesion_id, reply_id=self.__reply_id)
-            self.__sock.sendto(buf, self.__address)
-            self.__data_recv, addr = self.__sock.recvfrom(1024)
+            self.__sending_packet(buf)
             if self.__response == const.CMD_ACK_OK:
                 return (True, self.__response)
             else:
