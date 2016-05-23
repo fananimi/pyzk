@@ -103,3 +103,38 @@ class ZK(object):
                 return (False, self.__response)
         except Exception, e:
             return (False, e)
+
+    def restart(self):
+        '''
+        shutdown device
+        '''
+
+        command = const.CMD_RESTART
+        try:
+            buf = self.__create_header(command=command, session_id=self.__sesion_id, reply_id=self.__reply_id)
+            self.__sock.sendto(buf, self.__address)
+            self.__data_recv, addr = self.__sock.recvfrom(1024)
+            if self.__response == const.CMD_ACK_OK:
+                return (True, self.__response)
+            else:
+                return (False, self.__response)
+        except Exception, e:
+            return (False, e)
+
+
+    def power_off(self):
+        '''
+        shutdown device
+        '''
+
+        command = const.CMD_POWEROFF
+        try:
+            buf = self.__create_header(command=command, session_id=self.__sesion_id, reply_id=self.__reply_id)
+            self.__sock.sendto(buf, self.__address)
+            self.__data_recv, addr = self.__sock.recvfrom(1024)
+            if self.__response == const.CMD_ACK_OK:
+                return (True, self.__response)
+            else:
+                return (False, self.__response)
+        except Exception, e:
+            return (False, e)
