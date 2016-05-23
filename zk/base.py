@@ -157,66 +157,68 @@ class ZK(object):
         except Exception, e:
             return (False, e)
 
-    # def __get_size_user(self):
-    #     """Checks a returned packet to see if it returned CMD_PREPARE_DATA,
-    #     indicating that data packets are to be sent
+    def __get_size_user(self):
+        """Checks a returned packet to see if it returned CMD_PREPARE_DATA,
+        indicating that data packets are to be sent
 
-    #     Returns the amount of bytes that are going to be sent"""
-    #     response = self.__response
-    #     if response == const.CMD_PREPARE_DATA:
-    #         size = unpack('I', self.__data_recv[8:12])[0]
-    #         return size
-    #     else:
-    #         return 0
+        Returns the amount of bytes that are going to be sent"""
+        response = self.__response
+        if response == const.CMD_PREPARE_DATA:
+            size = unpack('I', self.__data_recv[8:12])[0]
+            return size
+        else:
+            return 0
 
-    # def get_users(self):
-    #     """Start a connection with the time clock"""
-    #     command = const.CMD_USERTEMP_RRQ
-    #     command_string = '\x05'
-    #     chksum = 0
+    def get_users(self):
+        command = const.CMD_USERTEMP_RRQ
+        command_string = chr(5)
 
-    #     buf = self.__create_header(command=command, chksum=chksum, session_id=self.__sesion_id, reply_id=self.__reply_id, command_string=command_string)
-    #     self.__sending_packet(buf)
-    #     try:
-    #         bytes = self.__get_size_user()
-    #         userdata = []
-    #         while bytes > 0:
-    #             data_recv, addr = self.__sock.recvfrom(1032)
-    #             userdata.append(data_recv)
-    #             bytes -= 1024
+        try:
+            buf = self.__create_header(command=command, session_id=self.__sesion_id, reply_id=self.__reply_id, command_string=command_string)
+            self.__sending_packet(buf)
+            self.__receive_packet(1024)
 
-    #         self.__sock.recvfrom(8)
+            bytes = self.__get_size_user()
+            userdata = []
 
-    #         users = {}
-    #         if len(userdata) > 0:
-    #             # The first 4 bytes don't seem to be related to the user
-    #             for x in xrange(len(userdata)):
-    #                 if x > 0:
-    #                     userdata[x] = userdata[x][8:]
+            if bytes:
+                while bytes > 0:
+                    data_recv, addr = self.__sock.recvfrom(1032)
+                    userdata.append(data_recv)
+                    bytes -= 1024
 
-    #             userdata = ''.join(userdata)
-    #             userdata = userdata[11:]
+                self.__receive_packet(8)
 
-    #             while len(userdata) > 72:
-    #                 uid, role, password, name, userid = unpack( '2s2s8s28sx31s', userdata.ljust(72)[:72])
+            users = {}
+            if len(userdata) > 0:
+                # The first 4 bytes don't seem to be related to the user
+                for x in xrange(len(userdata)):
+                    if x > 0:
+                        userdata[x] = userdata[x][8:]
 
-    #                 uid = int( uid.encode("hex"), 16)
-    #                 # Clean up some messy characters from the user name
-    #                 password = password.split('\x00', 1)[0]
-    #                 password = unicode(password.strip('\x00|\x01\x10x'), errors='ignore')
+                userdata = ''.join(userdata)
+                userdata = userdata[11:]
 
-    #                 userid = unicode(userid.strip('\x00|\x01\x10x'), errors='ignore')
+                while len(userdata) > 72:
+                    uid, role, password, name, userid = unpack( '2s2s8s28sx31s', userdata.ljust(72)[:72])
 
-    #                 name = name.split('\x00', 1)[0]
+                    uid = int( uid.encode("hex"), 16)
+                    # Clean up some messy characters from the user name
+                    password = password.split('\x00', 1)[0]
+                    password = unicode(password.strip('\x00|\x01\x10x'), errors='ignore')
 
-    #                 if not name:
-    #                     name = uid
+                    userid = unicode(userid.strip('\x00|\x01\x10x'), errors='ignore')
 
-    #                 users[uid] = (userid, name, int( role.encode("hex"), 16 ), password)
+                    name = name.split('\x00', 1)[0]
 
-    #                 userdata = userdata[72:]
+                    if not name:
+                        name = uid
 
-    #         return users
-    #     except Exception, e:
-    #         return (False, e)
+                    users[uid] = (userid, name, int( role.encode("hex"), 16 ), password)
+
+                    userdata = userdata[72:]
+
+            return users
+        except Exception, e:
+            return (False, e)
 
