@@ -192,6 +192,16 @@ class ZK(object):
         else:
             return cmd_response
 
+    def test_voice(self):
+        command = const.CMD_TESTVOICE
+        cmd_response = self.__send_command(command)
+        cmd_response['data'] = ''
+        if cmd_response.get('status'):
+            cmd_response['message'] = 'voice detected'
+            return cmd_response
+        else:
+            return cmd_response
+
     # def __get_size_user(self):
     #     """Checks a returned packet to see if it returned CMD_PREPARE_DATA,
     #     indicating that data packets are to be sent

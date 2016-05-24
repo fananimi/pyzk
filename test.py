@@ -24,6 +24,7 @@ if conn.get('status'):
 #     #             level = 'User'
 #     #         print "[UID %d]: ID: %s, Name: %s, Level: %s, Password: %s" % ( uid, users[uid][0], users[uid][1], level, users[uid][3]  )
 
+    print zk.test_voice()
     print zk.enable_device()
     print 'Disconnecting to device ...'
     print zk.disconnect()
