@@ -9,6 +9,7 @@ print 'Connecting to device ...'
 conn = zk.connect()
 if conn.get('status'):
     print conn
+    print zk.disable_device()
     print 'Firmware Version: : {}'.format(zk.get_firmware_version())
     # print 'Restarting device'
     # print zk.restart()
@@ -23,6 +24,7 @@ if conn.get('status'):
 #     #             level = 'User'
 #     #         print "[UID %d]: ID: %s, Name: %s, Level: %s, Password: %s" % ( uid, users[uid][0], users[uid][1], level, users[uid][3]  )
 
+    print zk.enable_device()
     print 'Disconnecting to device ...'
     print zk.disconnect()
 #     if status:

@@ -172,6 +172,26 @@ class ZK(object):
         else:
             return cmd_response
 
+    def disable_device(self):
+        command = const.CMD_DISABLEDEVICE
+        cmd_response = self.__send_command(command)
+        cmd_response['data'] = ''
+        if cmd_response.get('status'):
+            cmd_response['message'] = 'device disabled'
+            return cmd_response
+        else:
+            return cmd_response
+
+    def enable_device(self):
+        command = const.CMD_ENABLEDEVICE
+        cmd_response = self.__send_command(command)
+        cmd_response['data'] = ''
+        if cmd_response.get('status'):
+            cmd_response['message'] = 'device enabled'
+            return cmd_response
+        else:
+            return cmd_response
+
     # def __get_size_user(self):
     #     """Checks a returned packet to see if it returned CMD_PREPARE_DATA,
     #     indicating that data packets are to be sent
