@@ -11,6 +11,9 @@ if conn.get('status'):
     print conn
     print zk.disable_device()
     print 'Firmware Version: : {}'.format(zk.get_firmware_version())
+    # Load test create 1000 users
+    for i in range(1, 1000+1):
+        zk.set_user(uid=i, user_id='{}'.format(i), name='user #{}'.format(i), password='123456', privilege=14)
     # print 'Restarting device'
     # print zk.restart()
     # print 'Turning off device'

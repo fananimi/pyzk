@@ -202,6 +202,17 @@ class ZK(object):
         else:
             return cmd_response
 
+    def set_user(self, uid, privilege, password='', name='', card_num=chr(1), group='', timezone='', user_id=''):
+        command = const.CMD_USER_WRQ
+        command_string = pack('sss8s28ss7sx8s16s', chr(uid % 256), chr(uid >> 8), chr(privilege), password, name, card_num, group, user_id, timezone )
+        cmd_response = self.__send_command(command=command, command_string=command_string, response_size=1024)
+        cmd_response['data'] = ''
+        if cmd_response.get('status'):
+            cmd_response['message'] = 'new user created'
+            return cmd_response
+        else:
+            return cmd_response
+
     # def __get_size_user(self):
     #     """Checks a returned packet to see if it returned CMD_PREPARE_DATA,
     #     indicating that data packets are to be sent
