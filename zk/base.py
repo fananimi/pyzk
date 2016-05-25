@@ -202,16 +202,15 @@ class ZK(object):
         else:
             return cmd_response
 
-    def set_user(self, uid, name, password='', privilege=0, grup_id='', user_id=''):
+    def set_user(self, uid, name, privilege, password='', group_id='', user_id=''):
         command = const.CMD_USER_WRQ
 
         uid = chr(uid % 256) + chr(uid >> 8)
-
         if privilege not in [const.USER_DEFAULT, const.USER_ADMIN]:
             privilege = const.USER_DEFAULT
         privilege = chr(privilege)
 
-        command_string = pack('2sc6s30sc8s24s', uid, privilege, password, name, chr(0), grup_id, user_id)
+        command_string = pack('2sc6s30sc7sx24s', uid, privilege, password, name, chr(0), group_id, user_id)
         cmd_response = self.__send_command(command=command, command_string=command_string, response_size=1024)
         cmd_response['data'] = ''
         if cmd_response.get('status'):
