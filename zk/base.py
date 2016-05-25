@@ -219,68 +219,49 @@ class ZK(object):
         else:
             return cmd_response
 
-    # def __get_size_user(self):
-    #     """Checks a returned packet to see if it returned CMD_PREPARE_DATA,
-    #     indicating that data packets are to be sent
+    def __get_size_user(self):
+        """Checks a returned packet to see if it returned CMD_PREPARE_DATA,
+        indicating that data packets are to be sent
 
-    #     Returns the amount of bytes that are going to be sent"""
-    #     response = self.__response
-    #     if response == const.CMD_PREPARE_DATA:
-    #         size = unpack('I', self.__data_recv[8:12])[0]
-    #         return size
-    #     else:
-    #         return 0
+        Returns the amount of bytes that are going to be sent"""
+        response = self.__response
+        if response == const.CMD_PREPARE_DATA:
+            size = unpack('I', self.__data_recv[8:12])[0]
+            return size
+        else:
+            return 0
 
-    # def get_users(self):
-    #     command = const.CMD_USERTEMP_RRQ
-    #     command_string = chr(5)
+    def get_users(self):
+        command = const.CMD_USERTEMP_RRQ
+        cmd_response = self.__send_command(command=command, response_size=1024)
+        cmd_response['data'] = ''
+        if cmd_response:
+            bytes = self.__get_size_user()
+            userdata = []
+            if bytes:
+                while  bytes > 0:
+                    data_recv = self.__sock.recv(1032)
+                    userdata.append(data_recv)
+                    bytes -= 1024
 
-    #     try:
-    #         buf = self.__create_header(command=command, session_id=self.__sesion_id, reply_id=self.__reply_id, command_string=command_string)
-    #         self.__sending_packet(buf)
-    #         self.__receive_packet(1024)
+                if len(userdata):
+                    user_byte = ''.join(userdata)[12:]
+                    while len(user_byte) >= 72:
+                        uid, privilege, password, name, sparator, group_id, user_id = unpack('2sc8s28sc7sx24s', user_byte[0:72])
+                        u1 = int( uid[0].encode("hex"), 16)
+                        u2 = int( uid[1].encode("hex"), 16)
 
-    #         bytes = self.__get_size_user()
-    #         userdata = []
+                        uid = u1 + (u2*256)
+                        print '---'
+                        print uid
+                        print privilege
+                        print password
+                        print name
+                        print sparator
+                        print group_id
+                        print user_id
+                        print '---'
 
-    #         if bytes:
-    #             while bytes > 0:
-    #                 data_recv, addr = self.__sock.recvfrom(1032)
-    #                 userdata.append(data_recv)
-    #                 bytes -= 1024
-
-    #             self.__receive_packet(8)
-
-    #         users = {}
-    #         if len(userdata) > 0:
-    #             # The first 4 bytes don't seem to be related to the user
-    #             for x in xrange(len(userdata)):
-    #                 if x > 0:
-    #                     userdata[x] = userdata[x][8:]
-
-    #             userdata = ''.join(userdata)
-    #             userdata = userdata[11:]
-
-    #             while len(userdata) > 72:
-    #                 uid, role, password, name, userid = unpack( '2s2s8s28sx31s', userdata.ljust(72)[:72])
-
-    #                 uid = int( uid.encode("hex"), 16)
-    #                 # Clean up some messy characters from the user name
-    #                 password = password.split('\x00', 1)[0]
-    #                 password = unicode(password.strip('\x00|\x01\x10x'), errors='ignore')
-
-    #                 userid = unicode(userid.strip('\x00|\x01\x10x'), errors='ignore')
-
-    #                 name = name.split('\x00', 1)[0]
-
-    #                 if not name:
-    #                     name = uid
-
-    #                 users[uid] = (userid, name, int( role.encode("hex"), 16 ), password)
-
-    #                 userdata = userdata[72:]
-
-    #         return users
-    #     except Exception, e:
-    #         return (False, e)
-
+                        user_byte = user_byte[72:]
+        else:
+            return cmd_response
