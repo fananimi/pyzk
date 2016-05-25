@@ -288,3 +288,21 @@ class ZK(object):
         else:
             cmd_response['data'] = ''
             return cmd_response
+
+    def clear_user(self):
+        '''
+        Not implemented yet
+        '''
+        pass
+
+    def get_attendance(self):
+        '''
+        Not implemented yet
+        '''
+        pass
+
+    def clear_attendance(self):
+        '''
+        Not implemented yet
+        '''
+        pass
