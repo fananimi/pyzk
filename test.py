@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import sys
+from zk import const
 sys.path.append("zk")
 
 import zk
@@ -11,9 +12,12 @@ if conn.get('status'):
     print conn
     print zk.disable_device()
     print 'Firmware Version: : {}'.format(zk.get_firmware_version())
-    # Load test create 1000 users
-    for i in range(1, 1000+1):
-        zk.set_user(uid=i, user_id='{}'.format(i), name='user #{}'.format(i), password='123456', privilege=14)
+    # Load test create 2000 users
+    for i in range(1, 2000+1):
+        privilege = const.USER_DEFAULT
+        if i == 1:
+            privilege = const.USER_ADMIN
+        print zk.set_user(uid=i, name='user #{}'.format(i), privilege=privilege, password='123456', group_id='', user_id='{}'.format(i))
     # print 'Restarting device'
     # print zk.restart()
     # print 'Turning off device'

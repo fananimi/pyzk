@@ -210,7 +210,7 @@ class ZK(object):
             privilege = const.USER_DEFAULT
         privilege = chr(privilege)
 
-        command_string = pack('2sc6s30sc7sx24s', uid, privilege, password, name, chr(0), group_id, user_id)
+        command_string = pack('2sc8s28sc7sx24s', uid, privilege, password, name, chr(0), group_id, user_id)
         cmd_response = self.__send_command(command=command, command_string=command_string, response_size=1024)
         cmd_response['data'] = ''
         if cmd_response.get('status'):
