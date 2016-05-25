@@ -53,7 +53,7 @@ class ZK(object):
 
         return pack('H', checksum)
 
-    def __send_command(self, command, checksum=0, command_string='', response_size=8):
+    def __send_command(self, command, command_string='', response_size=8, checksum=0):
         try:
             buf = self.__create_header(command, checksum, self.__sesion_id, self.__reply_id,  command_string)
             self.__sending_packet(buf)
@@ -211,7 +211,7 @@ class ZK(object):
         privilege = chr(privilege)
 
         command_string = pack('2sc8s28sc7sx24s', uid, privilege, password, name, chr(0), group_id, user_id)
-        cmd_response = self.__send_command(command=command, command_string=command_string, response_size=1024)
+        cmd_response = self.__send_command(command, command_string, 1024)
         cmd_response['data'] = ''
         if cmd_response.get('status'):
             cmd_response['message'] = 'new user created'
