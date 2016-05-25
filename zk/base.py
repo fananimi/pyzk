@@ -249,13 +249,19 @@ class ZK(object):
                 if response == const.CMD_ACK_OK:
                     users = []
                     if len(userdata):
-                        user_byte = ''.join(userdata)[12:]
-                        while len(user_byte) >= 72:
-                            uid, privilege, password, name, sparator, group_id, user_id = unpack('2sc8s28sc7sx24s', user_byte[0:72])
+                        # The first 4 bytes don't seem to be related to the user
+                        for x in xrange(len(userdata)):
+                            if x > 0:
+                                userdata[x] = userdata[x][8:]
+
+                        userdata = ''.join(userdata)
+                        userdata = userdata[11:]
+                        while len(userdata) >= 72:
+                            uid, privilege, password, name, sparator, group_id, user_id = unpack( '2s2s8s28sc7sx23s', userdata.ljust(72)[:72])
                             u1 = int( uid[0].encode("hex"), 16)
                             u2 = int( uid[1].encode("hex"), 16)
 
-                            uid = u1 + (u2*256)
+                            uid = u2 + (u1*256)
                             name = unicode(name.strip('\x00|\x01\x10x'), errors='ignore')
                             privilege = int(privilege.encode("hex"), 16)
                             password = unicode(password.strip('\x00|\x01\x10x'), errors='ignore')
@@ -265,7 +271,7 @@ class ZK(object):
                             user = User(uid, name, privilege, password, group_id, user_id)
                             users.append(user)
 
-                            user_byte = user_byte[72:]
+                            userdata = userdata[72:]
 
                     cmd_response['status'] = True
                     cmd_response['code'] = response
