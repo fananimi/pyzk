@@ -93,6 +93,9 @@ EF_VERIFY           = (1<<7)# be real-time to verify fingerprint
 EF_FPFTR            = (1<<8)# be real-time capture fingerprint minutia
 EF_ALARM            = (1<<9)# Alarm signal
 
+USER_DEFAULT        = 0
+USER_ADMIN          = 14
+
 '''
 Follow is data type sign (attendance record, fingerprint)
 FCT_ATTLOG      (U8)1   Attendance record
