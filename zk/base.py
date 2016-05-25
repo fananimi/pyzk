@@ -3,6 +3,7 @@ from struct import pack, unpack
 from socket import socket, AF_INET, SOCK_DGRAM
 
 from zk import const
+from zk.user import User
 
 class ZK(object):
 
@@ -234,7 +235,6 @@ class ZK(object):
     def get_users(self):
         command = const.CMD_USERTEMP_RRQ
         cmd_response = self.__send_command(command=command, response_size=1024)
-        cmd_response['data'] = ''
         if cmd_response:
             bytes = self.__get_size_user()
             userdata = []
@@ -244,24 +244,41 @@ class ZK(object):
                     userdata.append(data_recv)
                     bytes -= 1024
 
-                if len(userdata):
-                    user_byte = ''.join(userdata)[12:]
-                    while len(user_byte) >= 72:
-                        uid, privilege, password, name, sparator, group_id, user_id = unpack('2sc8s28sc7sx24s', user_byte[0:72])
-                        u1 = int( uid[0].encode("hex"), 16)
-                        u2 = int( uid[1].encode("hex"), 16)
+                data_recv = self.__sock.recv(8)
+                response = unpack('HHHH', data_recv[:8])[0]
+                if response == const.CMD_ACK_OK:
+                    users = []
+                    if len(userdata):
+                        user_byte = ''.join(userdata)[12:]
+                        while len(user_byte) >= 72:
+                            uid, privilege, password, name, sparator, group_id, user_id = unpack('2sc8s28sc7sx24s', user_byte[0:72])
+                            u1 = int( uid[0].encode("hex"), 16)
+                            u2 = int( uid[1].encode("hex"), 16)
 
-                        uid = u1 + (u2*256)
-                        print '---'
-                        print uid
-                        print privilege
-                        print password
-                        print name
-                        print sparator
-                        print group_id
-                        print user_id
-                        print '---'
+                            uid = u1 + (u2*256)
+                            name = unicode(name.strip('\x00|\x01\x10x'), errors='ignore')
+                            privilege = int(privilege.encode("hex"), 16)
+                            password = unicode(password.strip('\x00|\x01\x10x'), errors='ignore')
+                            group_id = unicode(group_id.strip('\x00|\x01\x10x'), errors='ignore')
+                            user_id = unicode(user_id.strip('\x00|\x01\x10x'), errors='ignore')
 
-                        user_byte = user_byte[72:]
+                            user = User(uid, name, privilege, password, group_id, user_id)
+                            users.append(user)
+
+                            user_byte = user_byte[72:]
+
+                    cmd_response['status'] = True
+                    cmd_response['code'] = response
+                    cmd_response['message'] = 'success'
+                    cmd_response['data'] = users
+                    return cmd_response
+                else:
+                    return {
+                        'status': False,
+                        'code': response,
+                        'message': 'failed',
+                        'data': ''
+                    }
         else:
+            cmd_response['data'] = ''
             return cmd_response
