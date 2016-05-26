@@ -5,7 +5,7 @@ sys.path.append("zk")
 import zk
 from zk import const
 
-zk = zk.ZK('192.168.1.201')
+zk = zk.ZK('192.168.1.201', port=4370, timeout=5)
 print 'Connecting to device ...'
 conn = zk.connect()
 if conn.get('status'):
