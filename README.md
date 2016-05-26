@@ -2,7 +2,7 @@
 
 pyzk is unofficial library of zksoftware the fingerprint attendance machine. 
 
-# api Usages
+# api Usage
 
 Create ZK object and you will ready to call api.
 
