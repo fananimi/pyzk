@@ -59,3 +59,12 @@ zk.power_off()
 ```
 zk.restart()
 ```
+
+# Todo
+
+* Clear user
+* Finger template downloader & uploader
+* Clear attendance record
+* Get attendance record record
+* HTTP Rest api
+* and much more
