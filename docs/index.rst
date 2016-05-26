@@ -12,6 +12,9 @@ pyzk is unofficial library for zksoftware the fingerprint attendance machine. It
 Installation
 ############
 
+.. image:: https://travis-ci.org/fananimi/pyzk.svg?branch=master
+    :target: https://travis-ci.org/fananimi/pyzk
+
 You can install from two different options
 
 1. from pypi
