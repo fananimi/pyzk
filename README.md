@@ -1,9 +1,10 @@
 # pyzk
-[![Build Status](https://travis-ci.org/fananimi/pyzk.svg?branch=master)](https://travis-ci.org/fananimi/pyzk)
 
 pyzk is unofficial library of zksoftware the fingerprint attendance machine. 
 
 # Installation
+
+[![Build Status](https://travis-ci.org/fananimi/pyzk.svg?branch=master)](https://travis-ci.org/fananimi/pyzk)
 
 `pip install pyzk`
 
