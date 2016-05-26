@@ -69,6 +69,11 @@ Basic Usage
         if zk.is_connect:
             zk.disconnect()
 
+Technical Documentation
+#######################
+
+We open to everyone for contribute in this project. Please refer `Communication_protocol_manual_CMD.pdf <https://github.com/fananimi/pyzk/blob/master/docs/_static/Communication_protocol_manual_CMD.pdf>`_ before you starting write your code.
+
 .. toctree::
    :maxdepth: 2
 
