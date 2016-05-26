@@ -8,8 +8,9 @@ from zk.user import User
 class ZK(object):
 
     __data_recv = None
+    is_connect = False
 
-    def __init__(self, ip, port=4370, timeout=5):
+    def __init__(self, ip, port=4370, timeout=60):
         self.__address = (ip, port)
         self.__sock = socket(AF_INET, SOCK_DGRAM)
         self.__sock.settimeout(timeout)
@@ -116,6 +117,7 @@ class ZK(object):
         cmd_response = self.__send_command(command)
         cmd_response['data'] = ''
         if cmd_response.get('status'):
+            self.is_connect = True
             cmd_response['message'] = 'connected'
             return cmd_response
         else:
@@ -288,6 +290,24 @@ class ZK(object):
         else:
             cmd_response['data'] = ''
             return cmd_response
+
+    def cancel_capture(self):
+        command = const.CMD_CANCELCAPTURE
+        cmd_response = self.__send_command(command=command)
+        print cmd_response
+
+    def verify_user(self):
+        command = const.CMD_STARTVERIFY
+        # uid = chr(uid % 256) + chr(uid >> 8)
+        cmd_response = self.__send_command(command=command)
+        print cmd_response
+
+    def enroll_user(self, uid):
+        command = const.CMD_STARTENROLL
+        uid = chr(uid % 256) + chr(uid >> 8)
+        command_string = pack('2s', uid)
+        cmd_response = self.__send_command(command=command, command_string=command_string)
+        print cmd_response
 
     def clear_user(self):
         '''
