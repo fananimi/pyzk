@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 import sys
-from zk import const
 sys.path.append("zk")
 
 import zk
+from zk import const
 
 zk = zk.ZK('192.168.1.201')
 print 'Connecting to device ...'

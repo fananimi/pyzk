@@ -9,6 +9,7 @@ The usage is very simple, just Create new ZK instance and you will ready to call
 * Basic Ussage
 ```
 import zk
+from zk import const
 
 zk = zk.ZK(ip='192.168.1.201', port=4370, timeout=5)
 try:
