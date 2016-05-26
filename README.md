@@ -19,6 +19,19 @@ try:
     # Do another task here
     firmware = zk.get_firmware_version()
     print 'Firmware Version: : {}'.format(firmware.get('data'))
+    users = zk.get_users()
+    if users.get('status'):
+        for user in users.get('data'):
+            privilege = 'User'
+            if user.privilege == const.USER_ADMIN:
+                privilege = 'Admin'
+
+            print '- UID #{}'.format(user.uid)
+            print '  Name       : {}'.format(user.name)
+            print '  Privilege  : {}'.format(privilege)
+            print '  Password   : {}'.format(user.password)
+            print '  Group ID   : {}'.format(user.group_id)
+            print '  User  ID   : {}'.format(user.user_id)
 
     # don't forget to re-enable device
     zk.enable_device()
@@ -40,6 +53,12 @@ zk.get_firmware_version()
 
 ```
 zk.set_user(uid=1, name='Fanani M. Ihsan', privilege=const.USER_ADMIN, password='12345678', group_id='', user_id='123')
+```
+
+* Get User
+
+```
+users = zk.get_users()
 ```
 
 * Test voice
