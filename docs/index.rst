@@ -37,7 +37,10 @@ Basic Usage
 
     zk = zk.ZK(ip='192.168.1.201', port=4370, timeout=5)
     try:
-        zk.connect()
+        response = zk.connect()
+        if response.get('status') is False:
+            raise Exception(response.get('message'))
+
         # disable (lock) the device, make sure no activity when process run
         zk.disable_device()
 
