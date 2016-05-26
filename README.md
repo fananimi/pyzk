@@ -2,11 +2,11 @@
 
 pyzk is unofficial library of zksoftware the fingerprint attendance machine. 
 
-# Ussage
+# api Usages
 
-The usage is very simple, just Create new ZK instance and you will ready to call api.
+Create ZK object and you will ready to call api.
 
-* Basic Ussage
+* Basic Usage
 ```
 import zk
 from zk import const
@@ -82,9 +82,11 @@ zk.restart()
 
 # Todo
 
+* Create better documentation
 * Clear user
 * Finger template downloader & uploader
-* Clear attendance record
 * Get attendance record
+* Clear attendance record
 * HTTP Rest api
-* and much more
+* Create real time api (if possible)
+* and much more ...
