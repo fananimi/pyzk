@@ -14,7 +14,7 @@ from zk import const
 zk = zk.ZK(ip='192.168.1.201', port=4370, timeout=5)
 try:
     zk.connect()
-    # disable (lock) the device, make sure not activity when process run
+    # disable (lock) the device, make sure no activity when process run
     zk.disable_device()
 
     # Do another task here
@@ -85,6 +85,6 @@ zk.restart()
 * Clear user
 * Finger template downloader & uploader
 * Clear attendance record
-* Get attendance record record
+* Get attendance record
 * HTTP Rest api
 * and much more
