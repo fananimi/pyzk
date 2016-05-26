@@ -95,14 +95,3 @@ EF_ALARM            = (1<<9)# Alarm signal
 
 USER_DEFAULT        = 0
 USER_ADMIN          = 14
-
-'''
-Follow is data type sign (attendance record, fingerprint)
-FCT_ATTLOG      (U8)1   Attendance record
-FCT_WORKCODE    (U8)8   WorkCode。
-FCT_FINGERTMP   (U8)2   Fingerprint data
-FCT_OPLOG       (U8)4   Operation record
-FCT_USER        (U8)5   User record
-FCT_SMS         (U8)6   Short message
-FCT_UDATA       (U8)7   User’s short message
-'''
