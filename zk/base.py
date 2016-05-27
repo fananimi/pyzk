@@ -89,6 +89,18 @@ class ZK(object):
     def __receive_packet(self, buf_size):
         self.__data_recv = self.__sock.recv(buf_size)
 
+    def __get_data_size(self):
+        """Checks a returned packet to see if it returned CMD_PREPARE_DATA,
+        indicating that data packets are to be sent
+
+        Returns the amount of bytes that are going to be sent"""
+        response = self.__response
+        if response == const.CMD_PREPARE_DATA:
+            size = unpack('I', self.__data_recv[8:12])[0]
+            return size
+        else:
+            return 0
+
     @property
     def __response(self):
         '''
@@ -236,18 +248,6 @@ class ZK(object):
             return cmd_response
         else:
             return cmd_response
-
-    def __get_data_size(self):
-        """Checks a returned packet to see if it returned CMD_PREPARE_DATA,
-        indicating that data packets are to be sent
-
-        Returns the amount of bytes that are going to be sent"""
-        response = self.__response
-        if response == const.CMD_PREPARE_DATA:
-            size = unpack('I', self.__data_recv[8:12])[0]
-            return size
-        else:
-            return 0
 
     def get_users(self):
         '''
