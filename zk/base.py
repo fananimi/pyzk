@@ -305,6 +305,9 @@ class ZK(object):
                         'message': 'failed',
                         'data': ''
                     }
+            else:
+                cmd_response['data'] = ''
+                return cmd_response
         else:
             cmd_response['data'] = ''
             return cmd_response
