@@ -237,7 +237,7 @@ class ZK(object):
         else:
             return cmd_response
 
-    def __get_size_user(self):
+    def __get_data_size(self):
         """Checks a returned packet to see if it returned CMD_PREPARE_DATA,
         indicating that data packets are to be sent
 
@@ -256,7 +256,7 @@ class ZK(object):
         command = const.CMD_USERTEMP_RRQ
         cmd_response = self.__send_command(command=command, response_size=1024)
         if cmd_response:
-            bytes = self.__get_size_user()
+            bytes = self.__get_data_size()
             userdata = []
             if bytes:
                 while  bytes > 0:
