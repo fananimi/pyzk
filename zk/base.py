@@ -138,6 +138,9 @@ class ZK(object):
             return cmd_response
 
     def get_firmware_version(self):
+        '''
+        get firmware version name
+        '''
         command = const.CMD_GET_VERSION
         cmd_response = self.__send_command(command, response_size=1024)
         if cmd_response.get('status'):
@@ -149,7 +152,7 @@ class ZK(object):
 
     def restart(self):
         '''
-        shutdown device
+        restart connected device
         '''
 
         command = const.CMD_RESTART
@@ -163,7 +166,7 @@ class ZK(object):
 
     def power_off(self):
         '''
-        shutdown device
+        shutdown connected device
         '''
 
         command = const.CMD_POWEROFF
@@ -176,6 +179,9 @@ class ZK(object):
             return cmd_response
 
     def disable_device(self):
+        '''
+        disable (lock) connected device, make sure no activity when process run
+        '''
         command = const.CMD_DISABLEDEVICE
         cmd_response = self.__send_command(command)
         cmd_response['data'] = ''
@@ -186,6 +192,9 @@ class ZK(object):
             return cmd_response
 
     def enable_device(self):
+        '''
+        re-enable connected device
+        '''
         command = const.CMD_ENABLEDEVICE
         cmd_response = self.__send_command(command)
         cmd_response['data'] = ''
@@ -196,6 +205,9 @@ class ZK(object):
             return cmd_response
 
     def test_voice(self):
+        '''
+        play test voice
+        '''
         command = const.CMD_TESTVOICE
         cmd_response = self.__send_command(command)
         cmd_response['data'] = ''
@@ -206,6 +218,9 @@ class ZK(object):
             return cmd_response
 
     def set_user(self, uid, name, privilege, password='', group_id='', user_id=''):
+        '''
+        create or update user by uid
+        '''
         command = const.CMD_USER_WRQ
 
         uid = chr(uid % 256) + chr(uid >> 8)
@@ -235,6 +250,9 @@ class ZK(object):
             return 0
 
     def get_users(self):
+        '''
+        get all users
+        '''
         command = const.CMD_USERTEMP_RRQ
         cmd_response = self.__send_command(command=command, response_size=1024)
         if cmd_response:
@@ -292,17 +310,26 @@ class ZK(object):
             return cmd_response
 
     def cancel_capture(self):
+        '''
+        cancel capturing finger
+        '''
         command = const.CMD_CANCELCAPTURE
         cmd_response = self.__send_command(command=command)
         print cmd_response
 
     def verify_user(self):
+        '''
+        verify finger
+        '''
         command = const.CMD_STARTVERIFY
         # uid = chr(uid % 256) + chr(uid >> 8)
         cmd_response = self.__send_command(command=command)
         print cmd_response
 
     def enroll_user(self, uid):
+        '''
+        start enroll user
+        '''
         command = const.CMD_STARTENROLL
         uid = chr(uid % 256) + chr(uid >> 8)
         command_string = pack('2s', uid)
