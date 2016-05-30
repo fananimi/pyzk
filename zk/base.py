@@ -131,6 +131,7 @@ class ZK(object):
         '''
         disable (lock) connected device, make sure no activity when process run
         '''
+
         command = const.CMD_DISABLEDEVICE
         command_string = ''
         checksum = 0
@@ -148,6 +149,7 @@ class ZK(object):
         '''
         re-enable connected device
         '''
+
         command = const.CMD_ENABLEDEVICE
         command_string = ''
         checksum = 0
@@ -165,6 +167,7 @@ class ZK(object):
         '''
         get firmware version name
         '''
+
         command = const.CMD_GET_VERSION
         command_string = ''
         checksum = 0
@@ -219,6 +222,7 @@ class ZK(object):
         '''
         play test voice
         '''
+
         command = const.CMD_TESTVOICE
         command_string = ''
         checksum = 0
@@ -236,6 +240,7 @@ class ZK(object):
         '''
         create or update user by uid
         '''
+
         command = const.CMD_USER_WRQ
 
         uid = chr(uid % 256) + chr(uid >> 8)
@@ -259,6 +264,7 @@ class ZK(object):
         '''
         get all users
         '''
+
         command = const.CMD_USERTEMP_RRQ
         command_string = ''
         checksum = 0
@@ -313,6 +319,7 @@ class ZK(object):
         '''
         cancel capturing finger
         '''
+
         command = const.CMD_CANCELCAPTURE
         cmd_response = self.__send_command(command=command)
         print cmd_response
@@ -321,6 +328,7 @@ class ZK(object):
         '''
         verify finger
         '''
+
         command = const.CMD_STARTVERIFY
         # uid = chr(uid % 256) + chr(uid >> 8)
         cmd_response = self.__send_command(command=command)
@@ -330,6 +338,7 @@ class ZK(object):
         '''
         start enroll user
         '''
+
         command = const.CMD_STARTENROLL
         uid = chr(uid % 256) + chr(uid >> 8)
         command_string = pack('2s', uid)
@@ -340,16 +349,19 @@ class ZK(object):
         '''
         Not implemented yet
         '''
+
         pass
 
     def get_attendance(self):
         '''
         Not implemented yet
         '''
+
         pass
 
     def clear_attendance(self):
         '''
         Not implemented yet
         '''
+
         pass
