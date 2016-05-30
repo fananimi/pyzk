@@ -38,38 +38,36 @@ Basic Usage
     import zk
     from zk import const
 
+    conn = False
     zk = zk.ZK(ip='192.168.1.201', port=4370, timeout=5)
     try:
-        response = zk.connect()
-        if response.get('status') is False:
-            raise Exception(response.get('message'))
+        conn = zk.connect()
 
         # disable (lock) the device, make sure no activity when process run
         zk.disable_device()
 
         # Do another task here
-        firmware = zk.get_firmware_version()
-        print 'Firmware Version: : {}'.format(firmware.get('data'))
+        firmware_version = zk.get_firmware_version()
+        print 'Firmware Version: : {}'.format(firmware_version)
         users = zk.get_users()
-        if users.get('status'):
-            for user in users.get('data'):
-                privilege = 'User'
-                if user.privilege == const.USER_ADMIN:
-                    privilege = 'Admin'
+        for user in users:
+            privilege = 'User'
+            if user.privilege == const.USER_ADMIN:
+                privilege = 'Admin'
 
-                print '- UID #{}'.format(user.uid)
-                print '  Name       : {}'.format(user.name)
-                print '  Privilege  : {}'.format(privilege)
-                print '  Password   : {}'.format(user.password)
-                print '  Group ID   : {}'.format(user.group_id)
-                print '  User  ID   : {}'.format(user.user_id)
+            print '- UID #{}'.format(user.uid)
+            print '  Name       : {}'.format(user.name)
+            print '  Privilege  : {}'.format(privilege)
+            print '  Password   : {}'.format(user.password)
+            print '  Group ID   : {}'.format(user.group_id)
+            print '  User  ID   : {}'.format(user.user_id)
 
         # don't forget to re-enable device
         zk.enable_device()
     except Exception, e:
         print "Process terminate : {}".format(e)
     finally:
-        if zk.is_connect:
+        if conn:
             zk.disconnect()
 
 Technical Documentation
