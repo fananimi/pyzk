@@ -182,6 +182,21 @@ class ZK(object):
         else:
             raise Exception("Invalid response")
 
+    def get_serialnumber(self):
+        command = 11
+        command_string = '~SerialNumber'
+        checksum = 0
+        session_id = self.__sesion_id
+        reply_id = self.__reply_id
+        response_size = 1024
+
+        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        if cmd_response.get('status'):
+            serialnumber = self.__data_recv[8:].split('=')
+            return serialnumber[-1]
+        else:
+            raise Exception("Invalid response")
+
     def restart(self):
         '''
         restart connected device
