@@ -3,6 +3,7 @@ from struct import pack, unpack
 from socket import socket, AF_INET, SOCK_DGRAM
 
 from zk import const
+from zk.exception import ZKErrorResponse, ZKNetworkError
 from zk.user import User
 
 class ZK(object):
@@ -60,8 +61,12 @@ class ZK(object):
 
     def __send_command(self, command, command_string, checksum, session_id, reply_id, response_size):
         buf = self.__create_header(command, command_string, checksum, session_id, reply_id)
-        self.__sock.sendto(buf, self.__address)
-        self.__data_recv = self.__sock.recv(response_size)
+        try:
+            self.__sock.sendto(buf, self.__address)
+            self.__data_recv = self.__sock.recv(response_size)
+        except Exception, e:
+            raise ZKNetworkError(str(e))
+
         self.__response = unpack('HHHH', self.__data_recv[:8])[0]
         self.__reply_id = unpack('HHHH', self.__data_recv[:8])[3]
 
@@ -107,7 +112,7 @@ class ZK(object):
             self.__sesion_id = unpack('HHHH', self.__data_recv[:8])[2]
             return True
         else:
-            raise Exception("Invalid response")
+            raise ZKErrorResponse("Invalid response")
 
     def disconnect(self):
         '''
@@ -125,7 +130,7 @@ class ZK(object):
         if cmd_response.get('status'):
             return True
         else:
-            raise Exception("Invalid response")
+            raise ZKErrorResponse("Invalid response")
 
     def disable_device(self):
         '''
@@ -143,7 +148,7 @@ class ZK(object):
         if cmd_response.get('status'):
             return True
         else:
-            raise Exception("Invalid response")
+            raise ZKErrorResponse("Invalid response")
 
     def enable_device(self):
         '''
@@ -161,7 +166,7 @@ class ZK(object):
         if cmd_response.get('status'):
             return True
         else:
-            raise Exception("Invalid response")
+            raise ZKErrorResponse("Invalid response")
 
     def get_firmware_version(self):
         '''
@@ -180,7 +185,7 @@ class ZK(object):
             firmware_version = self.__data_recv[8:].strip('\x00|\x01\x10x')
             return firmware_version
         else:
-            raise Exception("Invalid response")
+            raise ZKErrorResponse("Invalid response")
 
     def get_serialnumber(self):
         command = const.CMD_OPTIONS_RRQ
@@ -195,7 +200,7 @@ class ZK(object):
             serialnumber = self.__data_recv[8:].split('=')[-1].strip('\x00|\x01\x10x')
             return serialnumber
         else:
-            raise Exception("Invalid response")
+            raise ZKErrorResponse("Invalid response")
 
     def restart(self):
         '''
@@ -213,7 +218,7 @@ class ZK(object):
         if cmd_response.get('status'):
             return True
         else:
-            raise Exception("Invalid response")
+            raise ZKErrorResponse("Invalid response")
 
     def poweroff(self):
         '''
@@ -231,7 +236,7 @@ class ZK(object):
         if cmd_response.get('status'):
             return True
         else:
-            raise Exception("Invalid response")
+            raise ZKErrorResponse("Invalid response")
 
     def test_voice(self):
         '''
@@ -249,7 +254,7 @@ class ZK(object):
         if cmd_response.get('status'):
             return True
         else:
-            raise Exception("Invalid response")
+            raise ZKErrorResponse("Invalid response")
 
     def set_user(self, uid, name, privilege, password='', group_id='', user_id=''):
         '''
@@ -273,7 +278,7 @@ class ZK(object):
         if cmd_response.get('status'):
             return True
         else:
-            raise Exception("Invalid response")
+            raise ZKErrorResponse("Invalid response")
 
     def get_users(self):
         '''
@@ -326,7 +331,7 @@ class ZK(object):
 
                             userdata = userdata[72:]
                 else:
-                    raise Exception("Invalid response")
+                    raise ZKErrorResponse("Invalid response")
 
         return users
 
@@ -376,7 +381,7 @@ class ZK(object):
             serialnumber = self.__data_recv[8:].split('=')[-1].strip('\x00|\x01\x10x')
             return serialnumber
         else:
-            raise Exception("Invalid response")
+            raise ZKErrorResponse("Invalid response")
 
     def get_attendance(self):
         '''
