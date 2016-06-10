@@ -183,7 +183,7 @@ class ZK(object):
             raise Exception("Invalid response")
 
     def get_serialnumber(self):
-        command = 11
+        command = const.CMD_OPTIONS_RRQ
         command_string = '~SerialNumber'
         checksum = 0
         session_id = self.__sesion_id
@@ -360,12 +360,23 @@ class ZK(object):
         cmd_response = self.__send_command(command=command, command_string=command_string)
         print cmd_response
 
-    def clear_user(self):
+    def clear_data(self):
         '''
-        Not implemented yet
+        clear all data (include: user, attendance report, finger database )
         '''
+        command = const.CMD_CLEAR_DATA
+        command_string = ''
+        checksum = 0
+        session_id = self.__sesion_id
+        reply_id = self.__reply_id
+        response_size = 1024
 
-        pass
+        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        if cmd_response.get('status'):
+            serialnumber = self.__data_recv[8:].split('=')[-1].strip('\x00|\x01\x10x')
+            return serialnumber
+        else:
+            raise Exception("Invalid response")
 
     def get_attendance(self):
         '''
