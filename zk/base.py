@@ -215,7 +215,7 @@ class ZK(object):
         else:
             raise Exception("Invalid response")
 
-    def power_off(self):
+    def poweroff(self):
         '''
         shutdown connected device
         '''
