@@ -280,6 +280,23 @@ class ZK(object):
         else:
             raise ZKErrorResponse("Invalid response")
 
+    def delete_user(self, uid):
+        command = const.CMD_DELETE_USER
+
+        uid = chr(uid % 256) + chr(uid >> 8)
+
+        command_string = pack('2s', uid)
+        checksum = 0
+        session_id = self.__sesion_id
+        reply_id = self.__reply_id
+        response_size = 1024
+
+        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        if cmd_response.get('status'):
+            return True
+        else:
+            raise ZKErrorResponse("Invalid response")
+
     def get_users(self):
         '''
         get all users
