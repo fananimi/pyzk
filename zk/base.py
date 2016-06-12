@@ -5,6 +5,7 @@ from socket import socket, AF_INET, SOCK_DGRAM
 
 from zk import const
 from zk.exception import ZKErrorResponse, ZKNetworkError
+from zk.attendance import Attendance
 from zk.user import User
 
 class ZK(object):
@@ -466,10 +467,15 @@ class ZK(object):
                         attendance_data = ''.join(attendance_data)
                         attendance_data = attendance_data[14:]
                         while len(attendance_data) >= 38:
-                            uid, sparator, timestamp, status, space = unpack( '24sc4sc10s', attendance_data.ljust(40)[:40])
-                            uid = uid.strip('\x00|\x01\x10x')
+                            user_id, sparator, timestamp, status, space = unpack( '24sc4sc10s', attendance_data.ljust(40)[:40])
+
+                            user_id = user_id.strip('\x00|\x01\x10x')
                             timestamp = self.__decode_time(timestamp)
                             status = int(status.encode("hex"), 16)
+
+                            attendance = Attendance(user_id, timestamp, status)
+                            attendances.append(attendance)
+
                             attendance_data = attendance_data[40:]
                 else:
                     raise ZKErrorResponse("Invalid response")
