@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from datetime import datetime
 from struct import pack, unpack
 from socket import socket, AF_INET, SOCK_DGRAM
 
@@ -92,6 +93,40 @@ class ZK(object):
             return size
         else:
             return 0
+
+    def __reverse_hex(self, hex):
+        data = ''
+        for i in reversed( xrange( len(hex)/2 ) ):
+            data += hex[i*2:(i*2)+2]
+        return data
+
+    def __decode_time(self, t):
+        """Decode a timestamp retrieved from the timeclock
+
+        copied from zkemsdk.c - DecodeTime"""
+        t = t.encode('hex')
+        t = int(self.__reverse_hex(t), 16)
+
+        second = t % 60
+        t = t / 60
+
+        minute = t % 60
+        t = t / 60
+
+        hour = t % 24
+        t = t / 24
+
+        day = t % 31+1
+        t = t / 31
+
+        month = t % 12+1
+        t = t / 12
+
+        year = t + 2000
+
+        d = datetime(year, month, day, hour, minute, second)
+
+        return d
 
     def connect(self):
         '''
@@ -333,8 +368,8 @@ class ZK(object):
                         userdata = userdata[11:]
                         while len(userdata) >= 72:
                             uid, privilege, password, name, sparator, group_id, user_id = unpack( '2s2s8s28sc7sx23s', userdata.ljust(72)[:72])
-                            u1 = int( uid[0].encode("hex"), 16)
-                            u2 = int( uid[1].encode("hex"), 16)
+                            u1 = int(uid[0].encode("hex"), 16)
+                            u2 = int(uid[1].encode("hex"), 16)
 
                             uid = u2 + (u1*256)
                             name = unicode(name.strip('\x00|\x01\x10x'), errors='ignore')
@@ -401,11 +436,46 @@ class ZK(object):
             raise ZKErrorResponse("Invalid response")
 
     def get_attendance(self):
-        '''
-        Not implemented yet
-        '''
+        command = const.CMD_ATTLOG_RRQ
+        command_string = ''
+        checksum = 0
+        session_id = self.__sesion_id
+        reply_id = self.__reply_id
+        response_size = 1024
 
-        pass
+        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        attendances = []
+        if cmd_response.get('status'):
+            if cmd_response.get('code') == const.CMD_PREPARE_DATA:
+                bytes = self.__get_data_size()
+                attendance_data = []
+                while bytes > 0:
+                    data_recv = self.__sock.recv(1032)
+                    attendance_data.append(data_recv)
+                    bytes -= 1024
+
+                data_recv = self.__sock.recv(8)
+                response = unpack('HHHH', data_recv[:8])[0]
+                if response == const.CMD_ACK_OK:
+                    if attendance_data:
+                        # The first 4 bytes don't seem to be related to the user
+                        for x in xrange(len(attendance_data)):
+                            if x > 0:
+                                attendance_data[x] = attendance_data[x][8:]
+
+                        attendance_data = ''.join(attendance_data)
+                        attendance_data = attendance_data[14:]
+                        while len(attendance_data) >= 38:
+                            uid, sparator, timestamp, status, space = unpack( '24sc4sc10s', attendance_data.ljust(40)[:40])
+                            uid = uid.strip('\x00|\x01\x10x')
+                            timestamp = self.__decode_time(timestamp)
+                            status = int(status.encode("hex"), 16)
+                            attendance_data = attendance_data[40:]
+                else:
+                    raise ZKErrorResponse("Invalid response")
+
+        return attendances
+
 
     def clear_attendance(self):
         '''
