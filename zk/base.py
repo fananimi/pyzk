@@ -440,8 +440,7 @@ class ZK(object):
 
         cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
         if cmd_response.get('status'):
-            serialnumber = self.__data_recv[8:].split('=')[-1].strip('\x00|\x01\x10x')
-            return serialnumber
+            return True
         else:
             raise ZKErrorResponse("Invalid response")
 
