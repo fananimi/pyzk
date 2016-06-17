@@ -44,6 +44,8 @@ try:
         print '  Password   : {}'.format(user.password)
         print '  Group ID   : {}'.format(user.group_id)
         print '  User  ID   : {}'.format(user.user_id)
+
+    zk.enable_device()
 except Exception, e:
     print "Process terminate : {}".format(e)
 finally:
