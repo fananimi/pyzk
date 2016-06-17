@@ -1,6 +1,6 @@
 # pyzk
 
-pyzk is unofficial library of zksoftware the fingerprint attendance machine. 
+pyzk is unofficial library of zksoftware the fingerprint attendance machine.
 
 # Installation
 
@@ -44,15 +44,27 @@ try:
         print '  Password   : {}'.format(user.password)
         print '  Group ID   : {}'.format(user.group_id)
         print '  User  ID   : {}'.format(user.user_id)
-
-    # don't forget to re-enable device
-    zk.enable_device()
 except Exception, e:
     print "Process terminate : {}".format(e)
 finally:
     if conn:
+        # don't forget to re-enable device
         zk.disconnect()
 
+```
+
+* Connect/Disconnect
+
+```
+zk.connect()
+zk.disconnect()
+```
+
+* Disable/Enable Connected Device
+
+```
+zk.disable_device()
+zk.enable_device()
 ```
 
 * Ger Firmware Version
@@ -61,16 +73,23 @@ finally:
 zk.get_firmware_version()
 ```
 
-* Create User
+* User Operation
 
 ```
+# Create user
 zk.set_user(uid=1, name='Fanani M. Ihsan', privilege=const.USER_ADMIN, password='12345678', group_id='', user_id='123')
-```
-
-* Get User
-
-```
+# Get all users (will return list of User object)
 users = zk.get_users()
+# Delete User
+zk.delete_user(uid=1)
+```
+
+* Attendance Record
+```
+# Get attendances (will return list of Attendance object)
+attendances = zk.get_attendance()
+# Clear attendances record
+zk.clear_attendance()
 ```
 
 * Test voice
@@ -79,25 +98,19 @@ users = zk.get_users()
 zk.test_voice()
 ```
 
-* Shutdown Device
+* Device Maintenance
 
 ```
+# shutdown connected device
 zk.power_off()
-```
-
-* Restart
-
-```
+# restart connected device
 zk.restart()
 ```
 
 # Todo
 
 * Create better documentation
-* Clear user
 * Finger template downloader & uploader
-* Get attendance record
-* Clear attendance record
 * HTTP Rest api
 * Create real time api (if possible)
 * and much more ...
