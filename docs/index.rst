@@ -70,6 +70,71 @@ Basic Usage
         if conn:
             zk.disconnect()
 
+API Ussage
+##########
+
+**Connect/Disconnect**
+
+.. code-block:: python
+
+    zk.connect()
+    zk.disconnect()
+
+
+**Disable/Enable Connected Device**
+
+.. code-block:: python
+
+    zk.disable_device()
+    zk.enable_device()
+
+
+**Ger Firmware Version**
+
+.. code-block:: python
+
+    zk.get_firmware_version()
+
+
+**User Operation**
+
+.. code-block:: python
+
+    # Create user
+    zk.set_user(uid=1, name='Fanani M. Ihsan', privilege=const.USER_ADMIN, password='12345678', group_id='', user_id='123')
+    # Get all users (will return list of User object)
+    users = zk.get_users()
+    # Delete User
+    zk.delete_user(uid=1)
+
+
+**Attendance Record**
+
+.. code-block:: python
+
+    # Get attendances (will return list of Attendance object)
+    attendances = zk.get_attendance()
+    # Clear attendances record
+    zk.clear_attendance()
+
+
+**Test voice**
+
+.. code-block:: python
+
+    zk.test_voice()
+
+
+**Device Maintenance**
+
+.. code-block:: python
+
+    # shutdown connected device
+    zk.power_off()
+    # restart connected device
+    zk.restart()
+
+
 Technical Documentation
 #######################
 
@@ -85,4 +150,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
