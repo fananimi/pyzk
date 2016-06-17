@@ -9,5 +9,8 @@ class User(object):
         self.group_id = group_id
         self.user_id = user_id
 
-    def __str__(self):
+    def __repr__(self):
         return self.name
+
+    def __repr__(self):
+        return '<User>: {}'.format(self.name)
