@@ -50,7 +50,6 @@ except Exception, e:
     print "Process terminate : {}".format(e)
 finally:
     if conn:
-        # don't forget to re-enable device
         zk.disconnect()
 
 ```
