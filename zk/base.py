@@ -22,7 +22,7 @@ class ZK(object):
         '''
         Puts a the parts that make up a packet together and packs them into a byte string
         '''
-        buf = pack('HHHH', command, checksum, session_id, reply_id) + command_string        
+        buf = pack('HHHH', command, checksum, session_id, reply_id) + command_string
         buf = unpack('8B'+'%sB' % len(command_string), buf)
         checksum = unpack('H', self.__create_checksum(buf))[0]
         reply_id += 1
@@ -47,12 +47,12 @@ class ZK(object):
             l -= 2
         if l:
             checksum = checksum + p[-1]
-            
+
         while checksum > const.USHRT_MAX:
             checksum -= const.USHRT_MAX
-        
+
         checksum = ~checksum
-        
+
         while checksum < 0:
             checksum += const.USHRT_MAX
 
