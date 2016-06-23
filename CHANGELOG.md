@@ -1,6 +1,12 @@
 Changelog
 =========
 
+Version 0.4
+-----------
+* bug fixed
+* minor update
+* update documentation
+
 Version 0.3
 -----------
 * add function `get_serialnumber` (return device serial number)
