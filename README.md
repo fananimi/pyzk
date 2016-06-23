@@ -110,7 +110,9 @@ zk.restart()
 
 # Related Project
 
-I also develop web interface to make easily manage multiple device. Please check [zkcluster](https://github.com/fananimi/zkcluster/ "zkcluster project") .
+* [zkcluster](https://github.com/fananimi/zkcluster/ "zkcluster project") is a django apps to manage multiple fingerprint devices.
+
+* [Driji](https://github.com/fananimi/driji/ "Driji project") is an attendance apps based fingerprint for school
 
 # Todo
 
