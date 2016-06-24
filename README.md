@@ -20,8 +20,6 @@ Create an ZK instnace and you will ready to call api.
 ```
 from zk import ZK, const
 
-sys.path.append("zk")
-
 conn = None
 zk = ZK('192.168.1.10', port=4370, timeout=5)
 try:
