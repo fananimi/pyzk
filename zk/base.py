@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime
+from socket import AF_INET, SOCK_DGRAM, socket
 from struct import pack, unpack
-from socket import socket, AF_INET, SOCK_DGRAM
 
 from zk import const
-from zk.exception import ZKErrorResponse, ZKNetworkError
 from zk.attendance import Attendance
+from zk.exception import ZKErrorResponse, ZKNetworkError
 from zk.user import User
+
 
 class ZK(object):
 
@@ -26,7 +27,7 @@ class ZK(object):
         Puts a the parts that make up a packet together and packs them into a byte string
         '''
         buf = pack('HHHH', command, checksum, session_id, reply_id) + command_string
-        buf = unpack('8B'+'%sB' % len(command_string), buf)
+        buf = unpack('8B' + '%sB' % len(command_string), buf)
         checksum = unpack('H', self.__create_checksum(buf))[0]
         reply_id += 1
         if reply_id >= const.USHRT_MAX:
@@ -100,8 +101,8 @@ class ZK(object):
 
     def __reverse_hex(self, hex):
         data = ''
-        for i in reversed( xrange( len(hex)/2 ) ):
-            data += hex[i*2:(i*2)+2]
+        for i in reversed(xrange(len(hex) / 2)):
+            data += hex[i * 2:(i * 2) + 2]
         return data
 
     def __decode_time(self, t):
@@ -120,10 +121,10 @@ class ZK(object):
         hour = t % 24
         t = t / 24
 
-        day = t % 31+1
+        day = t % 31 + 1
         t = t / 31
 
-        month = t % 12+1
+        month = t % 12 + 1
         t = t / 12
 
         year = t + 2000
@@ -149,7 +150,7 @@ class ZK(object):
             self.is_connect = True
             # set the session id
             self.__sesion_id = unpack('HHHH', self.__data_recv[:8])[2]
-            return True
+            return self
         else:
             raise ZKErrorResponse("Invalid response")
 
@@ -377,11 +378,11 @@ class ZK(object):
                         userdata = ''.join(userdata)
                         userdata = userdata[11:]
                         while len(userdata) >= 72:
-                            uid, privilege, password, name, sparator, group_id, user_id = unpack( '2s2s8s28sc7sx23s', userdata.ljust(72)[:72])
+                            uid, privilege, password, name, sparator, group_id, user_id = unpack('2s2s8s28sc7sx23s', userdata.ljust(72)[:72])
                             u1 = int(uid[0].encode("hex"), 16)
                             u2 = int(uid[1].encode("hex"), 16)
 
-                            uid = u2 + (u1*256)
+                            uid = u2 + (u1 * 256)
                             name = unicode(name.strip('\x00|\x01\x10x'), errors='ignore')
                             privilege = int(privilege.encode("hex"), 16)
                             password = unicode(password.strip('\x00|\x01\x10x'), errors='ignore')
@@ -478,7 +479,7 @@ class ZK(object):
                         attendance_data = ''.join(attendance_data)
                         attendance_data = attendance_data[14:]
                         while len(attendance_data) >= 38:
-                            user_id, sparator, timestamp, status, space = unpack( '24sc4sc10s', attendance_data.ljust(40)[:40])
+                            user_id, sparator, timestamp, status, space = unpack('24sc4sc10s', attendance_data.ljust(40)[:40])
 
                             user_id = user_id.strip('\x00|\x01\x10x')
                             timestamp = self.__decode_time(timestamp)
@@ -492,7 +493,6 @@ class ZK(object):
                     raise ZKErrorResponse("Invalid response")
 
         return attendances
-
 
     def clear_attendance(self):
         '''

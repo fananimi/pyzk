@@ -6,7 +6,7 @@ class Attendance(object):
         self.status = status
 
     def __str__(self):
-        return self.user_id
+        return '<Attendance>: {}'.format(self.user_id)
 
     def __repr__(self):
         return '<Attendance>: {}'.format(self.user_id)

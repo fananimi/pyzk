@@ -1,6 +1,6 @@
 # pyzk
 
-pyzk is unofficial library of zksoftware the fingerprint attendance machine.
+pyzk is an unofficial library of zksoftware the fingerprint attendance machine.
 
 # Installation
 
@@ -14,25 +14,24 @@ Complete documentation can be found at [Readthedocs](http://pyzk.readthedocs.io/
 
 # Api Usage
 
-Create ZK object and you will ready to call api.
+Create an ZK instnace and you will ready to call api.
 
 * Basic Usage
 ```
-import zk
-from zk import const
+from zk import ZK, const
 
-conn = False
-zk = zk.ZK(ip='192.168.1.201', port=4370, timeout=5)
+sys.path.append("zk")
+
+conn = None
+zk = ZK('192.168.1.10', port=4370, timeout=5)
 try:
+    print 'Connecting to device ...'
     conn = zk.connect()
-
-    # disable (lock) the device, make sure no activity when process run
-    zk.disable_device()
-
-    # Do another task here
-    firmware_version = zk.get_firmware_version()
-    print 'Firmware Version: : {}'.format(firmware_version)
-    users = zk.get_users()
+    print 'Disabling device ...'
+    conn.disable_device()
+    print 'Firmware Version: : {}'.format(conn.get_firmware_version())
+    # print '--- Get User ---'
+    users = conn.get_users()
     for user in users:
         privilege = 'User'
         if user.privilege == const.USER_ADMIN:
@@ -45,67 +44,69 @@ try:
         print '  Group ID   : {}'.format(user.group_id)
         print '  User  ID   : {}'.format(user.user_id)
 
-    zk.enable_device()
+    print "Voice Test ..."
+    conn.test_voice()
+    print 'Enabling device ...'
+    conn.enable_device()
 except Exception, e:
     print "Process terminate : {}".format(e)
 finally:
     if conn:
-        zk.disconnect()
-
+        conn.disconnect()
 ```
 
 * Connect/Disconnect
 
 ```
-zk.connect()
-zk.disconnect()
+conn = zk.connect()
+conn.disconnect()
 ```
 
 * Disable/Enable Connected Device
 
 ```
-zk.disable_device()
-zk.enable_device()
+conn.disable_device()
+conn.enable_device()
 ```
 
 * Ger Firmware Version
 
 ```
-zk.get_firmware_version()
+conn.get_firmware_version()
 ```
 
 * User Operation
 
 ```
 # Create user
-zk.set_user(uid=1, name='Fanani M. Ihsan', privilege=const.USER_ADMIN, password='12345678', group_id='', user_id='123')
+conn.set_user(uid=1, name='Fanani M. Ihsan', privilege=const.USER_ADMIN, password='12345678', group_id='', user_id='123')
 # Get all users (will return list of User object)
-users = zk.get_users()
+users = conn.get_users()
 # Delete User
-zk.delete_user(uid=1)
+conn.delete_user(uid=1)
 ```
 
 * Attendance Record
 ```
 # Get attendances (will return list of Attendance object)
-attendances = zk.get_attendance()
+attendances = conn.get_attendance()
 # Clear attendances record
-zk.clear_attendance()
+conn.clear_attendance()
 ```
 
 * Test voice
 
 ```
-zk.test_voice()
+conn.test_voice()
 ```
 
 * Device Maintenance
 
 ```
 # shutdown connected device
-zk.power_off()
+conn.power_off()
 # restart connected device
-zk.restart()
+conn.restart()
 ```
 
 # Related Project

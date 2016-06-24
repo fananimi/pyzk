@@ -1,26 +1,20 @@
 # -*- coding: utf-8 -*-
 import sys
+
+from zk import ZK, const
+
 sys.path.append("zk")
 
-import zk
-from zk import const
-
-conn = False
-zk = zk.ZK('192.168.1.201', port=4370, timeout=5)
+conn = None
+zk = ZK('192.168.1.10', port=4370, timeout=5)
 try:
     print 'Connecting to device ...'
     conn = zk.connect()
     print 'Disabling device ...'
-    zk.disable_device()
-    print 'Firmware Version: : {}'.format(zk.get_firmware_version())
-    # Load test create 2000 users
-    # for i in range(1, 2000+1):
-    #     privilege = const.USER_DEFAULT
-    #     if i == 1:
-    #         privilege = const.USER_ADMIN
-    #     print zk.set_user(uid=i, name='user #{}'.format(i), privilege=privilege, password='12345678', group_id='', user_id='{}'.format(i))
+    conn.disable_device()
+    print 'Firmware Version: : {}'.format(conn.get_firmware_version())
     # print '--- Get User ---'
-    users = zk.get_users()
+    users = conn.get_users()
     for user in users:
         privilege = 'User'
         if user.privilege == const.USER_ADMIN:
@@ -34,18 +28,11 @@ try:
         print '  User  ID   : {}'.format(user.user_id)
 
     print "Voice Test ..."
-    zk.test_voice()
-    # print 'Restarting device ...'
-    # zk.restart()
-    # print 'Turning off device ...'
-    # zk.power_off()
+    conn.test_voice()
     print 'Enabling device ...'
-    zk.enable_device()
-    print 'Disconnecting to device ...'    
-    zk.disconnect()
-
+    conn.enable_device()
 except Exception, e:
     print "Process terminate : {}".format(e)
 finally:
     if conn:
-        zk.disconnect()
+        conn.disconnect()
