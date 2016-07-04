@@ -376,16 +376,16 @@ class ZK(object):
                                 userdata[x] = userdata[x][8:]
 
                         userdata = ''.join(userdata)
-                        userdata = userdata[11:]
+                        userdata = userdata[12:]
                         while len(userdata) >= 72:
-                            uid, privilege, password, name, sparator, group_id, user_id = unpack('2s2s8s28sc7sx23s', userdata.ljust(72)[:72])
+                            uid, privilege, password, name, sparator, group_id, user_id = unpack('2sc8s28sc7sx24s', userdata.ljust(72)[:72])
                             u1 = int(uid[0].encode("hex"), 16)
                             u2 = int(uid[1].encode("hex"), 16)
 
-                            uid = u2 + (u1 * 256)
-                            name = unicode(name.strip('\x00|\x01\x10x'), errors='ignore')
+                            uid = u1 + (u2 * 256)
                             privilege = int(privilege.encode("hex"), 16)
                             password = unicode(password.strip('\x00|\x01\x10x'), errors='ignore')
+                            name = unicode(name.strip('\x00|\x01\x10x'), errors='ignore')
                             group_id = unicode(group_id.strip('\x00|\x01\x10x'), errors='ignore')
                             user_id = unicode(user_id.strip('\x00|\x01\x10x'), errors='ignore')
 
