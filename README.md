@@ -14,7 +14,7 @@ Complete documentation can be found at [Readthedocs](http://pyzk.readthedocs.io/
 
 # Api Usage
 
-Create an ZK instnace and you will ready to call api.
+Just create a ZK object and you will ready to call api.
 
 * Basic Usage
 ```
