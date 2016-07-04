@@ -349,7 +349,7 @@ class ZK(object):
         '''
 
         command = const.CMD_USERTEMP_RRQ
-        command_string = ''
+        command_string = chr(const.FCT_USER)
         checksum = 0
         session_id = self.__sesion_id
         reply_id = self.__reply_id

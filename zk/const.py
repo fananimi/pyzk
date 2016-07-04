@@ -95,3 +95,11 @@ EF_ALARM            = (1<<9)# Alarm signal
 
 USER_DEFAULT        = 0
 USER_ADMIN          = 14
+
+FCT_ATTLOG          = 1
+FCT_WORKCODE        = 8
+FCT_FINGERTMP       = 2
+FCT_OPLOG           = 4
+FCT_USER            = 5
+FCT_SMS             = 6
+FCT_UDATA           = 7
