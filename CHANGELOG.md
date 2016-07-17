@@ -1,6 +1,10 @@
 Changelog
 =========
 
+Version 0.5
+-----------
+* bug fixed get_users bug
+
 Version 0.4
 -----------
 * bug fixed
