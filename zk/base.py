@@ -222,7 +222,7 @@ class ZK(object):
 
         cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
         if cmd_response.get('status'):
-            firmware_version = self.__data_recv[8:].strip('\x00|\x01\x10x')
+            firmware_version = self.__data_recv[8:].split('\x00')[0]
             return firmware_version
         else:
             raise ZKErrorResponse("Invalid response")
@@ -240,7 +240,7 @@ class ZK(object):
 
         cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
         if cmd_response.get('status'):
-            serialnumber = self.__data_recv[8:].split('=')[-1].strip('\x00|\x01\x10x')
+            serialnumber = self.__data_recv[8:].split('=')[-1].split('\x00')[0]
             return serialnumber
         else:
             raise ZKErrorResponse("Invalid response")
@@ -384,10 +384,10 @@ class ZK(object):
 
                             uid = u1 + (u2 * 256)
                             privilege = int(privilege.encode("hex"), 16)
-                            password = unicode(password.strip('\x00|\x01\x10x'), errors='ignore')
-                            name = unicode(name.strip('\x00|\x01\x10x'), errors='ignore')
-                            group_id = unicode(group_id.strip('\x00|\x01\x10x'), errors='ignore')
-                            user_id = unicode(user_id.strip('\x00|\x01\x10x'), errors='ignore')
+                            password = unicode(password.split('\x00')[0], errors='ignore')
+                            name = unicode(name.split('\x00')[0], errors='ignore')
+                            group_id = unicode(group_id.split('\x00')[0], errors='ignore')
+                            user_id = unicode(user_id.split('\x00')[0], errors='ignore')
 
                             user = User(uid, name, privilege, password, group_id, user_id)
                             users.append(user)
@@ -481,7 +481,7 @@ class ZK(object):
                         while len(attendance_data) >= 38:
                             user_id, sparator, timestamp, status, space = unpack('24sc4sc10s', attendance_data.ljust(40)[:40])
 
-                            user_id = user_id.strip('\x00|\x01\x10x')
+                            user_id = user_id.split('\x00')[0]
                             timestamp = self.__decode_time(timestamp)
                             status = int(status.encode("hex"), 16)
 
