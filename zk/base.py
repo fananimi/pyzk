@@ -147,7 +147,7 @@ class ZK(object):
         copied from zkemsdk.c - DecodeTime"""
         t = t.encode('hex')
         t = int(self.__reverse_hex(t), 16)
-
+        #print "decode from  %s "% format(t, '04x')
         second = t % 60
         t = t / 60
 
@@ -169,6 +169,16 @@ class ZK(object):
 
         return d
 
+    def __encode_time(self, t):
+        """Encode a timestamp so that it can be read on the timeclock
+        """
+        # formula taken from zkemsdk.c - EncodeTime
+        # can also be found in the technical manual
+        d = (
+            ((t.year % 100) * 12 * 31 + ((t.month - 1) * 31) + t.day - 1) *
+            (24 * 60 * 60) + (t.hour * 60 + t.minute) * 60 + t.second
+        )
+        return d
     def connect(self):
         '''
         connect to the device
@@ -184,7 +194,7 @@ class ZK(object):
         cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
         self.__sesion_id = unpack('HHHH', self.__data_recv[:8])[2]
         if cmd_response.get('code')==const.CMD_ACK_UNAUTH:
-            print "try auth"
+            #print "try auth"
             command_string = make_commkey(self.__password,self.__sesion_id)
             cmd_response = self.__send_command(const.CMD_AUTH, command_string , checksum, self.__sesion_id, self.__reply_id, response_size)
         if cmd_response.get('status'):
@@ -305,6 +315,34 @@ class ZK(object):
         else:
             raise ZKErrorResponse("Invalid response")
 
+    def get_time(self):
+        """obtener la hora del equipo"""
+        command = const.CMD_GET_TIME
+        command_string = ''
+        checksum = 0
+        session_id = self.__sesion_id
+        reply_id = self.__reply_id
+        response_size = 1032
+
+        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        if cmd_response.get('status'):
+            return self.__decode_time(self.__data_recv[8:12])
+        else:
+            raise ZKErrorResponse("Invalid response")
+    def set_time(self, timestamp):
+        """ colocar la hora del sistema al zk """
+        command = const.CMD_SET_TIME
+        command_string = pack(b'I', self.__encode_time(timestamp))
+        checksum = 0
+        session_id = self.__sesion_id
+        reply_id = self.__reply_id
+        response_size = 8
+        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        if cmd_response.get('status'):
+            return True
+        else:
+            raise ZKErrorResponse("Invalid response")
+        
     def poweroff(self):
         '''
         shutdown the device
@@ -315,7 +353,7 @@ class ZK(object):
         checksum = 0
         session_id = self.__sesion_id
         reply_id = self.__reply_id
-        response_size = 8
+        response_size = 1032
 
         cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
         if cmd_response.get('status'):
