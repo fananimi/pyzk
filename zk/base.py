@@ -52,6 +52,7 @@ class ZK(object):
     __reply_id = 0
 
     def __init__(self, ip, port=4370, timeout=60, password=0):
+        self.is_connect = False
         self.__address = (ip, port)
         self.__sock = socket(AF_INET, SOCK_DGRAM)
         self.__sock.settimeout(timeout)
@@ -208,6 +209,7 @@ class ZK(object):
 
         cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
         if cmd_response.get('status'):
+            self.is_connect = False
             return True
         else:
             raise ZKErrorResponse("Invalid response")
