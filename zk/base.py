@@ -179,6 +179,7 @@ class ZK(object):
             (24 * 60 * 60) + (t.hour * 60 + t.minute) * 60 + t.second
         )
         return d
+
     def connect(self):
         '''
         connect to the device
