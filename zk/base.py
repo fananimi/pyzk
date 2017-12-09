@@ -441,11 +441,15 @@ class ZK(object):
         if cmd_response.get('status'):
             if cmd_response.get('code') == const.CMD_PREPARE_DATA:
                 bytes = self.__get_data_size()
+                print "user size is %s" % bytes
                 userdata = []
                 while bytes > 0:
                     data_recv = self.__sock.recv(1032)
+                    response = unpack('HHHH', data_recv[:8])[0]
+                    print "this packet response is: %s" % response
                     userdata.append(data_recv)
                     bytes -= 1024
+                    print "user still needs %s" % bytes
 
                 data_recv = self.__sock.recv(8)
                 response = unpack('HHHH', data_recv[:8])[0]
@@ -542,11 +546,21 @@ class ZK(object):
         if cmd_response.get('status'):
             if cmd_response.get('code') == const.CMD_PREPARE_DATA:
                 bytes = self.__get_data_size()
+                print "size is %s" % bytes
                 attendance_data = []
+                pac = 1
                 while bytes > 0:
                     data_recv = self.__sock.recv(1032)
+                    response = unpack('HHHH', data_recv[:8])[0]
+                    print "# %s packet response is: %s" % (pac, response)
+                    if response == const.CMD_ACK_OK:
+                        #truncado! continuar?
+                        print "broken!"
+                        break
+                    pac += 1
                     attendance_data.append(data_recv)
                     bytes -= 1024
+                    #print "still needs %s" % bytes
 
                 data_recv = self.__sock.recv(8)
                 response = unpack('HHHH', data_recv[:8])[0]
