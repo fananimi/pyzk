@@ -438,36 +438,36 @@ class ZK(object):
 
         cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
         users = []
+        pac = 0
         if cmd_response.get('status'):
             if cmd_response.get('code') == const.CMD_PREPARE_DATA:
                 bytes = self.__get_data_size()
-                print "user size is %s" % bytes
                 userdata = []
-                while bytes > 0:
+                while True:
                     data_recv = self.__sock.recv(1032)
                     response = unpack('HHHH', data_recv[:8])[0]
-                    print "this packet response is: %s" % response
-                    userdata.append(data_recv)
-                    bytes -= 1024
-                    print "user still needs %s" % bytes
-
-                data_recv = self.__sock.recv(8)
-                response = unpack('HHHH', data_recv[:8])[0]
+                    if response == const.CMD_DATA:
+                        pac += 1
+                        userdata.append(data_recv[8:]) #header turncated
+                        bytes -= 1024
+                    elif response == const.CMD_ACK_OK:
+                        break #without problem.
+                    else:
+                        #truncado! continuar?
+                        print "broken! with %s" % response
+                        print "user still needs %s" % bytes
+                        break
+                    
                 if response == const.CMD_ACK_OK:
                     if userdata:
                         # The first 4 bytes don't seem to be related to the user
-                        for x in xrange(len(userdata)):
-                            if x > 0:
-                                userdata[x] = userdata[x][8:]
-
                         userdata = ''.join(userdata)
-                        userdata = userdata[12:]
+                        userdata = userdata[4:]
                         while len(userdata) >= 72:
-                            uid, privilege, password, name, sparator, group_id, user_id = unpack('2sc8s28sc7sx24s', userdata.ljust(72)[:72])
-                            u1 = int(uid[0].encode("hex"), 16)
-                            u2 = int(uid[1].encode("hex"), 16)
-
-                            uid = u1 + (u2 * 256)
+                            uid, privilege, password, name, sparator, group_id, user_id = unpack('hc8s28sc7sx24s', userdata.ljust(72)[:72])
+                            #u1 = int(uid[0].encode("hex"), 16)
+                            #u2 = int(uid[1].encode("hex"), 16)
+                            #uid = u1 + (u2 * 256)
                             privilege = int(privilege.encode("hex"), 16)
                             password = unicode(password.split('\x00')[0], errors='ignore')
                             name = unicode(name.split('\x00')[0], errors='ignore')
@@ -546,41 +546,36 @@ class ZK(object):
         if cmd_response.get('status'):
             if cmd_response.get('code') == const.CMD_PREPARE_DATA:
                 bytes = self.__get_data_size()
-                print "size is %s" % bytes
                 attendance_data = []
                 pac = 1
-                while bytes > 0:
+                while True: #limitado por respuesta no por tamaño
                     data_recv = self.__sock.recv(1032)
                     response = unpack('HHHH', data_recv[:8])[0]
-                    print "# %s packet response is: %s" % (pac, response)
-                    if response == const.CMD_ACK_OK:
+                    #print "# %s packet response is: %s" % (pac, response)
+                    if response == const.CMD_DATA:
+                        pac += 1
+                        attendance_data.append(data_recv[8:]) #header turncated
+                        bytes -= 1024
+                    elif response == const.CMD_ACK_OK:
+                        break #without problem.
+                    else:
                         #truncado! continuar?
                         print "broken!"
                         break
-                    pac += 1
-                    attendance_data.append(data_recv)
-                    bytes -= 1024
+                    
                     #print "still needs %s" % bytes
 
-                data_recv = self.__sock.recv(8)
-                response = unpack('HHHH', data_recv[:8])[0]
                 if response == const.CMD_ACK_OK:
                     if attendance_data:
-                        # The first 4 bytes don't seem to be related to the user
-                        for x in xrange(len(attendance_data)):
-                            if x > 0:
-                                attendance_data[x] = attendance_data[x][8:]
-
                         attendance_data = ''.join(attendance_data)
-                        attendance_data = attendance_data[14:]
-                        while len(attendance_data) >= 38:
-                            user_id, sparator, timestamp, status, space = unpack('24sc4sc10s', attendance_data.ljust(40)[:40])
-
+                        attendance_data = attendance_data[4:]
+                        while len(attendance_data) >= 40:
+                            uid, user_id, sparator, timestamp, status, space = unpack('h24sc4sc8s', attendance_data.ljust(40)[:40])
                             user_id = user_id.split('\x00')[0]
                             timestamp = self.__decode_time(timestamp)
                             status = int(status.encode("hex"), 16)
 
-                            attendance = Attendance(user_id, timestamp, status)
+                            attendance = Attendance(uid, user_id, timestamp, status)
                             attendances.append(attendance)
 
                             attendance_data = attendance_data[40:]
