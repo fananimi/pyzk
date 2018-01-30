@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import sys
 from datetime import datetime
 from socket import AF_INET, SOCK_DGRAM, socket
 from struct import pack, unpack
@@ -51,12 +52,13 @@ class ZK(object):
     __sesion_id = 0
     __reply_id = 0
 
-    def __init__(self, ip, port=4370, timeout=60, password=0):
+    def __init__(self, ip, port=4370, timeout=60, password=0, firmware=8):
         self.is_connect = False
         self.__address = (ip, port)
         self.__sock = socket(AF_INET, SOCK_DGRAM)
         self.__sock.settimeout(timeout)
         self.__password = password # passint
+        self.__firmware = int(firmware) #TODO check minor version?
 
     def __create_header(self, command, command_string, checksum, session_id, reply_id):
         '''
@@ -184,7 +186,6 @@ class ZK(object):
         '''
         connect to the device
         '''
-
         command = const.CMD_CONNECT
         command_string = ''
         checksum = 0
@@ -210,7 +211,6 @@ class ZK(object):
         '''
         diconnect from the connected device
         '''
-
         command = const.CMD_EXIT
         command_string = ''
         checksum = 0
@@ -229,7 +229,6 @@ class ZK(object):
         '''
         disable (lock) device, ensure no activity when process run
         '''
-
         command = const.CMD_DISABLEDEVICE
         command_string = ''
         checksum = 0
@@ -247,7 +246,6 @@ class ZK(object):
         '''
         re-enable the connected device
         '''
-
         command = const.CMD_ENABLEDEVICE
         command_string = ''
         checksum = 0
@@ -265,7 +263,6 @@ class ZK(object):
         '''
         return the firmware version
         '''
-
         command = const.CMD_GET_VERSION
         command_string = ''
         checksum = 0
@@ -302,7 +299,6 @@ class ZK(object):
         '''
         restart the device
         '''
-
         command = const.CMD_RESTART
         command_string = ''
         checksum = 0
@@ -348,7 +344,6 @@ class ZK(object):
         '''
         shutdown the device
         '''
-
         command = const.CMD_POWEROFF
         command_string = ''
         checksum = 0
@@ -366,7 +361,6 @@ class ZK(object):
         '''
         play test voice
         '''
-
         command = const.CMD_TESTVOICE
         command_string = ''
         checksum = 0
@@ -384,15 +378,29 @@ class ZK(object):
         '''
         create or update user by uid
         '''
-
         command = const.CMD_USER_WRQ
 
-        uid = chr(uid % 256) + chr(uid >> 8)
+        #uid = chr(uid % 256) + chr(uid >> 8)
         if privilege not in [const.USER_DEFAULT, const.USER_ADMIN]:
             privilege = const.USER_DEFAULT
         privilege = chr(privilege)
-
-        command_string = pack('2sc8s28sc7sx24s', uid, privilege, password, name, chr(0), group_id, user_id)
+        if self.__firmware == 6:
+            print "uid : %i" % uid
+            print "pri : %c" % privilege
+            print "pass: %s" % str(password)
+            print "name: %s" % str(name)
+            print type(name)
+            print "group %i" % int(group_id)
+            print "uid2: %i" % int(user_id)
+            try:
+                command_string = pack('Hc5s8s5sBHI', uid, privilege, str(password), str(name), chr(0), int(group_id), 0, int(user_id))
+                print "cmd : %s" % command_string
+            except Exception, e:
+                print "s_h Error pack: %s" % e
+                print "Error pack: %s" % sys.exc_info()[0]
+                raise ZKErrorResponse("Invalid response")
+        else:
+            command_string = pack('Hc8s28sc7sx24s', uid, privilege, password, name, chr(0), group_id, user_id)
         checksum = 0
         session_id = self.__sesion_id
         reply_id = self.__reply_id
@@ -423,12 +431,12 @@ class ZK(object):
             return True
         else:
             raise ZKErrorResponse("Invalid response")
+    #def get_user_template(self, uid, finger):
 
     def get_users(self):
         '''
         return all user
         '''
-
         command = const.CMD_USERTEMP_RRQ
         command_string = chr(const.FCT_USER)
         checksum = 0
@@ -454,8 +462,8 @@ class ZK(object):
                         break #without problem.
                     else:
                         #truncado! continuar?
-                        print "broken! with %s" % response
-                        print "user still needs %s" % bytes
+                        #print "broken! with %s" % response
+                        #print "user still needs %s" % bytes
                         break
                     
                 if response == const.CMD_ACK_OK:
@@ -463,31 +471,45 @@ class ZK(object):
                         # The first 4 bytes don't seem to be related to the user
                         userdata = ''.join(userdata)
                         userdata = userdata[4:]
-                        while len(userdata) >= 72:
-                            uid, privilege, password, name, sparator, group_id, user_id = unpack('hc8s28sc7sx24s', userdata.ljust(72)[:72])
-                            #u1 = int(uid[0].encode("hex"), 16)
-                            #u2 = int(uid[1].encode("hex"), 16)
-                            #uid = u1 + (u2 * 256)
-                            privilege = int(privilege.encode("hex"), 16)
-                            password = unicode(password.split('\x00')[0], errors='ignore')
-                            name = unicode(name.split('\x00')[0], errors='ignore')
-                            group_id = unicode(group_id.split('\x00')[0], errors='ignore')
-                            user_id = unicode(user_id.split('\x00')[0], errors='ignore')
+                        if self.__firmware == 6:
+                            while len(userdata) >= 28:
+                                uid, privilege, password, name, card, group_id, timezone, user_id = unpack('HB5s8s5sBhI',userdata.ljust(28)[:28])
+                                password = unicode(password.split('\x00')[0], errors='ignore')
+                                name = unicode(name.split('\x00')[0], errors='ignore').strip()
+                                card = unpack('Q', card.ljust(8,'\x00'))[0] #or hex value?
+                                group_id = str(group_id)
+                                user_id = str(user_id)
+                                #TODO: check card value and find in ver8                                
+                                if not name:
+                                    name = user_id
+                                user = User(uid, name, privilege, password, group_id, user_id)
+                                users.append(user)
+                                print "[6]user:",uid, privilege, password, name, card, group_id, timezone, user_id
+                                userdata = userdata[28:]
+                        else:
+                            while len(userdata) >= 72:
+                                uid, privilege, password, name, sparator, group_id, user_id = unpack('Hc8s28sc7sx24s', userdata.ljust(72)[:72])
+                                #u1 = int(uid[0].encode("hex"), 16)
+                                #u2 = int(uid[1].encode("hex"), 16)
+                                #uid = u1 + (u2 * 256)
+                                privilege = int(privilege.encode("hex"), 16)
+                                password = unicode(password.split('\x00')[0], errors='ignore')
+                                name = unicode(name.split('\x00')[0], errors='ignore').strip()
+                                group_id = unicode(group_id.split('\x00')[0], errors='ignore').strip()
+                                user_id = unicode(user_id.split('\x00')[0], errors='ignore')
 
-                            user = User(uid, name, privilege, password, group_id, user_id)
-                            users.append(user)
+                                user = User(uid, name, privilege, password, group_id, user_id)
+                                users.append(user)
 
-                            userdata = userdata[72:]
+                                userdata = userdata[72:]
                 else:
                     raise ZKErrorResponse("Invalid response")
-
         return users
 
     def cancel_capture(self):
         '''
         cancel capturing finger
         '''
-
         command = const.CMD_CANCELCAPTURE
         cmd_response = self.__send_command(command=command)
         print cmd_response
@@ -496,7 +518,6 @@ class ZK(object):
         '''
         verify finger
         '''
-
         command = const.CMD_STARTVERIFY
         # uid = chr(uid % 256) + chr(uid >> 8)
         cmd_response = self.__send_command(command=command)
@@ -506,11 +527,15 @@ class ZK(object):
         '''
         start enroll user
         '''
-
         command = const.CMD_STARTENROLL
         uid = chr(uid % 256) + chr(uid >> 8)
         command_string = pack('2s', uid)
-        cmd_response = self.__send_command(command=command, command_string=command_string)
+        checksum = 0
+        session_id = self.__sesion_id
+        reply_id = self.__reply_id
+        response_size = 8
+
+        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
         print cmd_response
 
     def clear_data(self):
@@ -560,28 +585,34 @@ class ZK(object):
                         break #without problem.
                     else:
                         #truncado! continuar?
-                        print "broken!"
+                        #print "broken!"
                         break
-                    
                     #print "still needs %s" % bytes
-
                 if response == const.CMD_ACK_OK:
                     if attendance_data:
                         attendance_data = ''.join(attendance_data)
                         attendance_data = attendance_data[4:]
-                        while len(attendance_data) >= 40:
-                            uid, user_id, sparator, timestamp, status, space = unpack('h24sc4sc8s', attendance_data.ljust(40)[:40])
-                            user_id = user_id.split('\x00')[0]
-                            timestamp = self.__decode_time(timestamp)
-                            status = int(status.encode("hex"), 16)
+                        if self.__firmware == 6:
+                            while len(attendance_data) >= 8:
+                                uid, status, timestamp = unpack('HH4s', attendance_data.ljust(8)[:8])
+                                user_id = str(uid) #TODO revisar posibles valores cruzar con userdata
+                                timestamp = self.__decode_time(timestamp)
+                                attendance = Attendance(uid, user_id, timestamp, status)
+                                attendances.append(attendance)
+                                attendance_data = attendance_data[8:]
+                        else:
+                            while len(attendance_data) >= 40:
+                                uid, user_id, sparator, timestamp, status, space = unpack('H24sc4sc8s', attendance_data.ljust(40)[:40])
+                                user_id = user_id.split('\x00')[0]
+                                timestamp = self.__decode_time(timestamp)
+                                status = int(status.encode("hex"), 16)
 
-                            attendance = Attendance(uid, user_id, timestamp, status)
-                            attendances.append(attendance)
+                                attendance = Attendance(uid, user_id, timestamp, status)
+                                attendances.append(attendance)
 
-                            attendance_data = attendance_data[40:]
+                                attendance_data = attendance_data[40:]
                 else:
                     raise ZKErrorResponse("Invalid response")
-
         return attendances
 
     def clear_attendance(self):
@@ -594,7 +625,6 @@ class ZK(object):
         session_id = self.__sesion_id
         reply_id = self.__reply_id
         response_size = 1024
-
         cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
         if cmd_response.get('status'):
             return True

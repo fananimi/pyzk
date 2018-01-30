@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 class User(object):
 
-    def __init__(self, uid, name, privilege, password='', group_id='', user_id=''):
+    def __init__(self, uid, name, privilege, password='', group_id='', user_id='', card=0):
         self.uid = uid
         self.name = name
         self.privilege = privilege
