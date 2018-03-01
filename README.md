@@ -84,6 +84,11 @@ users = conn.get_users()
 conn.delete_user(uid=1)
 ```
 
+* Remote Fingerprint Enrollment
+```
+zk.enroll_user('23')
+```
+
 * Attendance Record
 ```
 # Get attendances (will return list of Attendance object)
