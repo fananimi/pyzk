@@ -417,17 +417,21 @@ class ZK(object):
         cmd_response = self.__send_command(command=command)
         print cmd_response
 
-    def enroll_user(self, uid):
+    def enroll_user(self, uid=''):
         '''
         start enroll user
         '''
 
         command = const.CMD_STARTENROLL
-        uid = chr(uid % 256) + chr(uid >> 8)
         command_string = pack('2s', uid)
-        cmd_response = self.__send_command(command=command, command_string=command_string)
+        
+        checksum = 0
+        session_id = self.__sesion_id
+        reply_id = self.__reply_id
+        response_size = 8
+        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
         print cmd_response
-
+        
     def clear_data(self):
         '''
         clear all data (include: user, attendance report, finger database )
