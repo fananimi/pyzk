@@ -295,6 +295,61 @@ class ZK(object):
         else:
             raise ZKErrorResponse("Invalid response")
 
+    def get_platform(self):
+        '''
+        return the serial number
+        '''
+        command = const.CMD_OPTIONS_RRQ
+        command_string = '~Platform'
+        checksum = 0
+        session_id = self.__sesion_id
+        reply_id = self.__reply_id
+        response_size = 1024
+
+        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        if cmd_response.get('status'):
+            platform = self.__data_recv[8:].split('=')[-1].split('\x00')[0]
+            return platform
+        else:
+            raise ZKErrorResponse("Invalid response")
+
+    def get_device_name(self):
+        '''
+        return the serial number
+        '''
+        command = const.CMD_OPTIONS_RRQ
+        command_string = '~DeviceName'
+        checksum = 0
+        session_id = self.__sesion_id
+        reply_id = self.__reply_id
+        response_size = 1024
+
+        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        if cmd_response.get('status'):
+            device = self.__data_recv[8:].split('=')[-1].split('\x00')[0]
+            return device
+        else:
+            raise ZKErrorResponse("Invalid response")
+
+    def get_pin_width(self):
+        '''
+        return the serial number
+        '''
+        command = const.CMD_GET_PINWIDTH
+        command_string = ' P'
+        checksum = 0
+        session_id = self.__sesion_id
+        reply_id = self.__reply_id
+        response_size = 1024
+
+        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        if cmd_response.get('status'):
+            width = self.__data_recv[8:]..split('\x00')[0]
+            returnbytearray(width)[0]
+        else:
+            raise ZKErrorResponse("Invalid response")
+
+
     def restart(self):
         '''
         restart the device
@@ -528,7 +583,9 @@ class ZK(object):
         start enroll user
         '''
         command = const.CMD_STARTENROLL
+        print "enrol uid b", uid
         uid = chr(uid % 256) + chr(uid >> 8)
+        print "enrol uid a", uid
         command_string = pack('2s', uid)
         checksum = 0
         session_id = self.__sesion_id
