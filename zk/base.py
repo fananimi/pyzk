@@ -8,6 +8,7 @@ from zk import const
 from zk.attendance import Attendance
 from zk.exception import ZKErrorResponse, ZKNetworkError
 from zk.user import User
+from zk.finger import Finger
 
 def make_commkey(key, session_id, ticks=50):
     """take a password and session_id and scramble them to send to the time
@@ -59,7 +60,17 @@ class ZK(object):
         self.__sock.settimeout(timeout)
         self.__password = password # passint
         self.__firmware = int(firmware) #TODO check minor version?
-
+        self.users = 0
+        self.fingers = 0
+        self.records = 0
+        self.dummy = 0
+        self.cards = 0
+        self.fingers_cap = 0
+        self.users_cap = 0
+        self.rec_cap = 0
+        self.fingers_av = 0
+        self.users_av = 0
+        self.rec_av = 0
     def __create_header(self, command, command_string, checksum, session_id, reply_id):
         '''
         Puts a the parts that make up a packet together and packs them into a byte string
@@ -201,7 +212,7 @@ class ZK(object):
             cmd_response = self.__send_command(const.CMD_AUTH, command_string , checksum, self.__sesion_id, self.__reply_id, response_size)
         if cmd_response.get('status'):
             self.is_connect = True
-            # set the session id
+            # set the session iduid, privilege, password, name, card, group_id, timezone, user_id = unpack('HB5s8s5sBhI',userdata.ljust(28)[:28])
             return self
         else:
             print "connect err {} ".format(cmd_response["code"])
@@ -344,11 +355,62 @@ class ZK(object):
 
         cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
         if cmd_response.get('status'):
-            width = self.__data_recv[8:]..split('\x00')[0]
-            returnbytearray(width)[0]
+            width = self.__data_recv[8:].split('\x00')[0]
+            return bytearray(width)[0]
         else:
             raise ZKErrorResponse("Invalid response")
 
+    def free_data(self):
+        """ clear buffer"""
+        command = const.CMD_FREE_DATA
+        command_string = ''
+        checksum = 0
+        session_id = self.__sesion_id
+        reply_id = self.__reply_id
+        response_size = 1024
+
+        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        if cmd_response.get('status'):
+            return True
+        else:
+            raise ZKErrorResponse("Invalid response")
+
+    def read_sizes(self):
+        """ read sizes """
+        command = const.CMD_GET_FREE_SIZES
+        command_string = ''
+        checksum = 0
+        session_id = self.__sesion_id
+        reply_id = self.__reply_id
+        response_size = 1024
+
+        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        if cmd_response.get('status'):
+            fields = unpack('iiiiiiiiiiiiiiiiiiii', self.__data_recv[8:])
+            self.users = fields[4]
+            self.fingers = fields[6]
+            self.records = fields[8]
+            self.dummy = fields[10] #???
+            self.cards = fields[12]
+            self.fingers_cap = fields[14]
+            self.users_cap = fields[15]
+            self.rec_cap = fields[16]
+            self.fingers_av = fields[17]
+            self.users_av = fields[18]
+            self.rec_av = fields[19]
+            #TODO: get faces size...
+
+            return True
+        else:
+            raise ZKErrorResponse("Invalid response")
+
+    def __str__(self):
+        """ for debug"""
+        return "ZK%i adr:%s:%s users:%i/%i fingers:%i/%i, records:%i/%i" % (
+            self.__firmware, self.__address[0], self.__address[1],
+            self.users, self.users_cap, self.fingers, self.fingers_cap,
+            self.records, self.rec_cap
+        )
 
     def restart(self):
         '''
@@ -381,6 +443,7 @@ class ZK(object):
             return self.__decode_time(self.__data_recv[8:12])
         else:
             raise ZKErrorResponse("Invalid response")
+
     def set_time(self, timestamp):
         """ colocar la hora del sistema al zk """
         command = const.CMD_SET_TIME
@@ -416,7 +479,7 @@ class ZK(object):
         '''
         play test voice
         '''
-        command = const.CMD_TESTVOICE
+        command = const.CMD_TESTVOICEuid, privilege, password, name, card, group_id, timezone, user_id = unpack('HB5s8s5sBhI',userdata.ljust(28)[:28])
         command_string = ''
         checksum = 0
         session_id = self.__sesion_id
@@ -487,7 +550,67 @@ class ZK(object):
         else:
             raise ZKErrorResponse("Invalid response")
     #def get_user_template(self, uid, finger):
+    def get_templates(self):
+        """ return array of fingers"""
+        command = const.CMD_DB_RRQ
+        command_string = chr(const.FCT_FINGERTMP)
+        checksum = 0
+        session_id = self.__sesion_id
+        reply_id = self.__reply_id
+        response_size = 1024
+        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        templates =[]
+        pac = 0
+        if cmd_response.get('status'):
+            if cmd_response.get('code') == const.CMD_PREPARE_DATA:
+                bytes = self.__get_data_size()
+                templatedata = []
+                while True:
+                    data_recv = self.__sock.recv(1032)
+                    response = unpack('HHHH', data_recv[:8])[0]
+                    if response == const.CMD_DATA:
+                        pac += 1
+                        templatedata.append(data_recv[8:]) #header turncated
+                        bytes -= 1024
+                    elif response == const.CMD_ACK_OK:
+                        break #without problem.
+                    else:
+                        #truncado! continuar?
+                        #print "broken! with %s" % response
+                        #print "user still needs %s" % bytes
+                        break
+                    
+                if response == const.CMD_ACK_OK:
+                    if templatedata:
+                        # first 4 bytes, total size of template data
+                        templatedata = ''.join(templatedata)
+                        total_size = unpack('i', templatedata[0:4])[0]
+                        print "total size: ", total_size
+                        templatedata = templatedata[4:]
+                        if self.__firmware == 6: #tested!
+                            while total_size:
+                                size, uid, fid, valid = unpack('HHbb',templatedata[:6])
+                                template = unpack("%is" % (size-6), templatedata[6:size])
+                                finger = Finger(size,uid,fid,valid,template)
+                                print finger # test
+                                templates.append(finger)
+                                templatedata = templatedata[(size):]
+                                total_size -= size
+                        else: # TODO: test!!!
+                            while total_size:
+                                size, uid, fid, valid = unpack('HHbb',templatedata[:6])
+                                template = unpack("%is" % (size-6), templatedata[6:size])
+                                finger = Finger(size,uid,fid,valid,template)
+                                print finger # test
+                                templates.append(finger)
+                                templatedata = templatedata[(size):]
+                                total_size -= size
+                        self.free_data()
+                else:
+                    raise ZKErrorResponse("Invalid response")
+        return templates
 
+        
     def get_users(self):
         '''
         return all user
@@ -536,7 +659,7 @@ class ZK(object):
                                 user_id = str(user_id)
                                 #TODO: check card value and find in ver8                                
                                 if not name:
-                                    name = user_id
+                                    name = "NN-%s" % user_id
                                 user = User(uid, name, privilege, password, group_id, user_id)
                                 users.append(user)
                                 print "[6]user:",uid, privilege, password, name, card, group_id, timezone, user_id
@@ -552,11 +675,13 @@ class ZK(object):
                                 name = unicode(name.split('\x00')[0], errors='ignore').strip()
                                 group_id = unicode(group_id.split('\x00')[0], errors='ignore').strip()
                                 user_id = unicode(user_id.split('\x00')[0], errors='ignore')
-
+                                if not name:
+                                    name = "NN-%s" % user_id
                                 user = User(uid, name, privilege, password, group_id, user_id)
                                 users.append(user)
 
                                 userdata = userdata[72:]
+                        self.free_data()
                 else:
                     raise ZKErrorResponse("Invalid response")
         return users
@@ -668,6 +793,7 @@ class ZK(object):
                                 attendances.append(attendance)
 
                                 attendance_data = attendance_data[40:]
+                        self.free_data()
                 else:
                     raise ZKErrorResponse("Invalid response")
         return attendances
