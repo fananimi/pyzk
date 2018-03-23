@@ -497,7 +497,8 @@ class ZK(object):
         create or update user by uid
         '''
         command = const.CMD_USER_WRQ
-
+        if not user_id:
+            user_id = str(uid) #ZK6 needs uid2 == uid
         #uid = chr(uid % 256) + chr(uid >> 8)
         if privilege not in [const.USER_DEFAULT, const.USER_ADMIN]:
             privilege = const.USER_DEFAULT
@@ -550,7 +551,37 @@ class ZK(object):
         else:
             raise ZKErrorResponse("Invalid response")
     #def get_user_template(self, uid, finger):
+
     def get_templates(self):
+        """ return array of finger """
+        templates = []
+        templatedata, size = self.read_with_buffer(const.CMD_DB_RRQ, const.FCT_FINGERTMP)
+        if size < 4:
+            print "WRN: no user data" # debug
+            return []
+        total_size = unpack('i', templatedata[0:4])[0]
+        templatedata = templatedata[4:] #total size not used
+        if self.__firmware == 6: #tested!
+            while total_size:
+                size, uid, fid, valid = unpack('HHbb',templatedata[:6])
+                template = unpack("%is" % (size-6), templatedata[6:size])
+                finger = Finger(size, uid, fid, valid, template)
+                print finger # test
+                templates.append(finger)
+                templatedata = templatedata[size:]
+                total_size -= size
+        else: # TODO: test!!!
+            while total_size:
+                size, uid, fid, valid = unpack('HHbb',templatedata[:6])
+                template = unpack("%is" % (size-6), templatedata[6:size])
+                finger = Finger(size, uid, fid, valid, template)
+                print finger # test
+                templates.append(finger)
+                templatedata = templatedata[(size):]
+                total_size -= size
+        return templates
+    
+    def _get_templates(self):
         """ return array of fingers"""
         command = const.CMD_DB_RRQ
         command_string = chr(const.FCT_FINGERTMP)
@@ -610,8 +641,49 @@ class ZK(object):
                     raise ZKErrorResponse("Invalid response")
         return templates
 
-        
     def get_users(self):
+        """ return all user """
+        users = []
+        userdata, size = self.read_with_buffer(const.CMD_USERTEMP_RRQ, const.FCT_USER)
+        print "user size %i" % size
+        if size < 4:
+            print "WRN: no user data" # debug
+            return []
+        userdata = userdata[4:] #total size not used
+        if self.__firmware == 6:
+            while len(userdata) >= 28:
+                uid, privilege, password, name, card, group_id, timezone, user_id = unpack('HB5s8s5sBhI',userdata.ljust(28)[:28])
+                password = unicode(password.split('\x00')[0], errors='ignore')
+                name = unicode(name.split('\x00')[0], errors='ignore').strip()
+                card = unpack('Q', card.ljust(8,'\x00'))[0] #or hex value?
+                group_id = str(group_id)
+                user_id = str(user_id)
+                #TODO: check card value and find in ver8                                
+                if not name:
+                    name = "NN-%s" % user_id
+                user = User(uid, name, privilege, password, group_id, user_id)
+                users.append(user)
+                print "[6]user:",uid, privilege, password, name, card, group_id, timezone, user_id
+                userdata = userdata[28:]
+        else:
+            while len(userdata) >= 72:
+                uid, privilege, password, name, sparator, group_id, user_id = unpack('Hc8s28sc7sx24s', userdata.ljust(72)[:72])
+                #u1 = int(uid[0].encode("hex"), 16)
+                #u2 = int(uid[1].encode("hex"), 16)
+                #uid = u1 + (u2 * 256)
+                privilege = int(privilege.encode("hex"), 16)
+                password = unicode(password.split('\x00')[0], errors='ignore')
+                name = unicode(name.split('\x00')[0], errors='ignore').strip()
+                group_id = unicode(group_id.split('\x00')[0], errors='ignore').strip()
+                user_id = unicode(user_id.split('\x00')[0], errors='ignore')
+                if not name:
+                    name = "NN-%s" % user_id
+                user = User(uid, name, privilege, password, group_id, user_id)
+                users.append(user)
+                userdata = userdata[72:]
+        return users
+        
+    def _get_users(self):
         '''
         return all user
         '''
@@ -691,8 +763,13 @@ class ZK(object):
         cancel capturing finger
         '''
         command = const.CMD_CANCELCAPTURE
-        cmd_response = self.__send_command(command=command)
-        print cmd_response
+        command_string = ''
+        checksum = 0
+        session_id = self.__sesion_id
+        reply_id = self.__reply_id
+        response_size = 8
+        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        return bool(cmd_response.get('status'))
 
     def verify_user(self):
         '''
@@ -737,7 +814,94 @@ class ZK(object):
         else:
             raise ZKErrorResponse("Invalid response")
 
+    def __read_chunk(self, start, size):
+        """ read a chunk from buffer """
+        command = 1504 #CMD_READ_BUFFER
+        command_string = pack('<ii', start, size)
+        #print "rc cs", command_string
+        checksum = 0
+        session_id = self.__sesion_id
+        reply_id = self.__reply_id
+        response_size = 1024
+        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        data = []
+        if not cmd_response.get('status'):
+            raise ZKErrorResponse("Invalid response")
+        #else
+        if cmd_response.get('code') == const.CMD_PREPARE_DATA:
+            bytes = self.__get_data_size() #TODO: check with size
+            while True: #limitado por respuesta no por tamaño
+                data_recv = self.__sock.recv(1032)
+                response = unpack('HHHH', data_recv[:8])[0]
+                #print "# %s packet response is: %s" % (pac, response)
+                if response == const.CMD_DATA:
+                    data.append(data_recv[8:]) #header turncated
+                    bytes -= 1024
+                elif response == const.CMD_ACK_OK:
+                    break #without problem.
+                else:
+                    #truncado! continuar?
+                    #print "broken!"
+                    break
+                #print "still needs %s" % bytes
+        return ''.join(data)
+
+    def read_with_buffer(self, command, fct=0 ,ext=0):
+        """ Test read info with buffered command (ZK6: 1503) """
+        MAX_CHUNK = 16 * 1204
+        command_string = pack('<bhii', 1, command, fct, ext)
+        #print "rwb cs", command_string
+        checksum = 0
+        session_id = self.__sesion_id
+        reply_id = self.__reply_id
+        response_size = 1024
+        data = []
+        start = 0
+        cmd_response = self.__send_command(1503, command_string, checksum, session_id, reply_id, response_size)
+        if not cmd_response.get('status'):
+            raise ZKErrorResponse("Not supported")
+        size = unpack('I', self.__data_recv[9:13])[0]  # extra info???
+        #print "size fill be %i" % size
+        remain = size % MAX_CHUNK
+        packets = (size-remain) / MAX_CHUNK # should be size /16k
+        for _wlk in range(packets):
+            data.append(self.__read_chunk(start,MAX_CHUNK))
+            start += MAX_CHUNK
+        if remain:
+            data.append(self.__read_chunk(start, remain))
+            start += remain # Debug
+        self.free_data()
+        #print "_read w/chunk %i bytes" % start
+        return ''.join(data), start
+
     def get_attendance(self):
+        """ return attendance record """
+        attendances = []
+        attendance_data, size = self.read_with_buffer(const.CMD_ATTLOG_RRQ)
+        if size < 4:
+            print "WRN: no attendance data" # debug
+            return []
+        attendance_data = attendance_data[4:] #total size not used
+        if self.__firmware == 6:
+            while len(attendance_data) >= 8:
+                uid, status, timestamp = unpack('HH4s', attendance_data.ljust(8)[:8])
+                user_id = str(uid) #TODO revisar posibles valores cruzar con userdata
+                timestamp = self.__decode_time(timestamp)
+                attendance = Attendance(uid, user_id, timestamp, status)
+                attendances.append(attendance)
+                attendance_data = attendance_data[8:]
+        else:
+            while len(attendance_data) >= 40:
+                uid, user_id, sparator, timestamp, status, space = unpack('H24sc4sc8s', attendance_data.ljust(40)[:40])
+                user_id = user_id.split('\x00')[0]
+                timestamp = self.__decode_time(timestamp)
+                status = int(status.encode("hex"), 16)
+
+                attendance = Attendance(uid, user_id, timestamp, status)
+                attendances.append(attendance)
+                attendance_data = attendance_data[40:]
+        return attendances
+    def _get_attendance(self):
         '''
         return all attendance record
         '''
