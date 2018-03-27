@@ -492,7 +492,7 @@ class ZK(object):
         else:
             raise ZKErrorResponse("Invalid response")
 
-    def set_user(self, uid, name, privilege, password='', group_id='', user_id=''):
+    def set_user(self, uid, name, privilege=0, password='', group_id='', user_id='', card=0):
         '''
         create or update user by uid
         '''
@@ -531,6 +531,23 @@ class ZK(object):
         else:
             raise ZKErrorResponse("Invalid response")
 
+    def delete_user_template(self, uid, temp_id):
+        """
+        Delete specific template
+        """
+        command = const.CMD_DELETE_USERTEMP
+        command_string = pack('hb', uid, temp_id)
+        checksum = 0
+        session_id = self.__sesion_id
+        reply_id = self.__reply_id
+        response_size = 1024
+
+        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        if cmd_response.get('status'):
+            return True #refres_data (1013)?
+        else:
+            raise ZKErrorResponse("Invalid response")
+
     def delete_user(self, uid):
         '''
         delete specific user by uid
@@ -550,10 +567,42 @@ class ZK(object):
             return True
         else:
             raise ZKErrorResponse("Invalid response")
-    #def get_user_template(self, uid, finger):
+
+    def get_user_template(self, uid, temp_id):
+        command = 88 # comando secreto!!!
+        command_string = pack('hb', uid, temp_id)
+        checksum = 0
+        session_id = self.__sesion_id
+        reply_id = self.__reply_id
+        response_size = 1024
+        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        data = []
+        if not cmd_response.get('status'):
+            raise ZKErrorResponse("Invalid response")
+        #else
+        if cmd_response.get('code') == const.CMD_PREPARE_DATA:
+            bytes = self.__get_data_size() #TODO: check with size
+            size = bytes
+            while True: #limitado por respuesta no por tamaño
+                data_recv = self.__sock.recv(1032)
+                response = unpack('HHHH', data_recv[:8])[0]
+                #print "# %s packet response is: %s" % (pac, response)
+                if response == const.CMD_DATA:
+                    data.append(data_recv[8:]) #header turncated
+                    bytes -= 1024
+                elif response == const.CMD_ACK_OK:
+                    break #without problem.
+                else:
+                    #truncado! continuar?
+                    #print "broken!"
+                    break
+                #print "still needs %s" % bytes
+        data = ''.join(data)
+        #uid 32 fing 03, starts with 4d-9b-53-53-32-31
+        return Finger(size + 6, uid, temp_id, 1, data) # TODO: confirm
 
     def get_templates(self):
-        """ return array of finger """
+        """ return array of all fingers """
         templates = []
         templatedata, size = self.read_with_buffer(const.CMD_DB_RRQ, const.FCT_FINGERTMP)
         if size < 4:
@@ -564,7 +613,7 @@ class ZK(object):
         if self.__firmware == 6: #tested!
             while total_size:
                 size, uid, fid, valid = unpack('HHbb',templatedata[:6])
-                template = unpack("%is" % (size-6), templatedata[6:size])
+                template = unpack("%is" % (size-6), templatedata[6:size])[0]
                 finger = Finger(size, uid, fid, valid, template)
                 print finger # test
                 templates.append(finger)
@@ -573,72 +622,12 @@ class ZK(object):
         else: # TODO: test!!!
             while total_size:
                 size, uid, fid, valid = unpack('HHbb',templatedata[:6])
-                template = unpack("%is" % (size-6), templatedata[6:size])
+                template = unpack("%is" % (size-6), templatedata[6:size])[0]
                 finger = Finger(size, uid, fid, valid, template)
                 print finger # test
                 templates.append(finger)
                 templatedata = templatedata[(size):]
                 total_size -= size
-        return templates
-    
-    def _get_templates(self):
-        """ return array of fingers"""
-        command = const.CMD_DB_RRQ
-        command_string = chr(const.FCT_FINGERTMP)
-        checksum = 0
-        session_id = self.__sesion_id
-        reply_id = self.__reply_id
-        response_size = 1024
-        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
-        templates =[]
-        pac = 0
-        if cmd_response.get('status'):
-            if cmd_response.get('code') == const.CMD_PREPARE_DATA:
-                bytes = self.__get_data_size()
-                templatedata = []
-                while True:
-                    data_recv = self.__sock.recv(1032)
-                    response = unpack('HHHH', data_recv[:8])[0]
-                    if response == const.CMD_DATA:
-                        pac += 1
-                        templatedata.append(data_recv[8:]) #header turncated
-                        bytes -= 1024
-                    elif response == const.CMD_ACK_OK:
-                        break #without problem.
-                    else:
-                        #truncado! continuar?
-                        #print "broken! with %s" % response
-                        #print "user still needs %s" % bytes
-                        break
-                    
-                if response == const.CMD_ACK_OK:
-                    if templatedata:
-                        # first 4 bytes, total size of template data
-                        templatedata = ''.join(templatedata)
-                        total_size = unpack('i', templatedata[0:4])[0]
-                        print "total size: ", total_size
-                        templatedata = templatedata[4:]
-                        if self.__firmware == 6: #tested!
-                            while total_size:
-                                size, uid, fid, valid = unpack('HHbb',templatedata[:6])
-                                template = unpack("%is" % (size-6), templatedata[6:size])
-                                finger = Finger(size,uid,fid,valid,template)
-                                print finger # test
-                                templates.append(finger)
-                                templatedata = templatedata[(size):]
-                                total_size -= size
-                        else: # TODO: test!!!
-                            while total_size:
-                                size, uid, fid, valid = unpack('HHbb',templatedata[:6])
-                                template = unpack("%is" % (size-6), templatedata[6:size])
-                                finger = Finger(size,uid,fid,valid,template)
-                                print finger # test
-                                templates.append(finger)
-                                templatedata = templatedata[(size):]
-                                total_size -= size
-                        self.free_data()
-                else:
-                    raise ZKErrorResponse("Invalid response")
         return templates
 
     def get_users(self):
@@ -780,15 +769,12 @@ class ZK(object):
         cmd_response = self.__send_command(command=command)
         print cmd_response
 
-    def enroll_user(self, uid):
+    def enroll_user(self, uid, temp_id=0):
         '''
         start enroll user
         '''
         command = const.CMD_STARTENROLL
-        print "enrol uid b", uid
-        uid = chr(uid % 256) + chr(uid >> 8)
-        print "enrol uid a", uid
-        command_string = pack('2s', uid)
+        command_string = pack('hhb', uid, 0, temp_id) # el 0 es misterio
         checksum = 0
         session_id = self.__sesion_id
         reply_id = self.__reply_id

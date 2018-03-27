@@ -8,6 +8,7 @@ class User(object):
         self.password = password
         self.group_id = group_id
         self.user_id = user_id
+        self.card = card
 
     def __str__(self):
         return '<User>: {}'.format(self.name)
