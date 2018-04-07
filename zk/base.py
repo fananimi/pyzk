@@ -475,6 +475,23 @@ class ZK(object):
         else:
             raise ZKErrorResponse("Invalid response")
 
+    def refresh_data(self):
+        '''
+        shutdown the device
+        '''
+        command = const.CMD_REFRESHDATA
+        command_string = ''
+        checksum = 0
+        session_id = self.__sesion_id
+        reply_id = self.__reply_id
+        response_size = 8
+
+        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        if cmd_response.get('status'):
+            return True
+        else:
+            raise ZKErrorResponse("Invalid response")
+
     def test_voice(self):
         '''
         play test voice
@@ -517,7 +534,7 @@ class ZK(object):
             except Exception, e:
                 print "s_h Error pack: %s" % e
                 print "Error pack: %s" % sys.exc_info()[0]
-                raise ZKErrorResponse("Invalid response")
+                raise ZKErrorResponse("Cant pack user")
         else:
             command_string = pack('Hc8s28sc7sx24s', uid, privilege, password, name, chr(0), group_id, user_id)
         checksum = 0
@@ -529,9 +546,74 @@ class ZK(object):
         if cmd_response.get('status'):
             return True
         else:
-            raise ZKErrorResponse("Invalid response")
+            raise ZKErrorResponse("Cant set user")
+    def save_user_template(self, user, fingers=[]):
+        """ save user and template """
+        # armar paquete de huellas
+        if isinstance(fingers, Finger):
+            fingers =[Finger]
+        fpack = ""
+        table = ""
+        fnum = 0x10 # possibly flag
+        tstart = 0
+        for finger in fingers:
+            tfp = finger.repack_only()
+            table += pack("<bHbI", 2, user.uid, fnum, tstart)
+            tstart += len(tfp)
+            fnum += 1 # hack 
+            fpack += tfp
+        upack = user.repack29()
+        head = pack("III", len(upack), len(table), len(fpack))
+        packet = head + upack + table + fpack
+        self._send_with_buffer(packet)
+        command = 110 # Unknown
+        command_string = pack('<IHH', 12,0,8) # ??? write? WRQ user data?
+        checksum = 0
+        session_id = self.__sesion_id
+        reply_id = self.__reply_id
+        response_size = 8
+        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        if not cmd_response.get('status'):
+            raise ZKErrorResponse("Cant save utemp")
+        self.refresh_data()
 
-    def delete_user_template(self, uid, temp_id):
+    def _send_with_buffer(self, buffer):
+        MAX_CHUNK = 1024
+        size = len(buffer)
+        #free_Data
+        self.free_data()
+        # send prepare_data
+        command = const.CMD_PREPARE_DATA
+        command_string = pack('I', size)
+        checksum = 0
+        session_id = self.__sesion_id
+        reply_id = self.__reply_id
+        response_size = 8
+        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        if not cmd_response.get('status'):
+            raise ZKErrorResponse("Cant prepare data")
+        remain = size % MAX_CHUNK
+        packets = (size - remain) / MAX_CHUNK
+        start = 0
+        for _wlk in range(packets):
+            self.__send_chunk(buffer[start:start+MAX_CHUNK])
+            start += MAX_CHUNK
+        if remain:
+            self.__send_chunk(buffer[start:start+remain])
+
+    def __send_chunk(self, command_string):
+        command = const.CMD_DATA
+        checksum = 0
+        session_id = self.__sesion_id
+        reply_id = self.__reply_id
+        response_size = 8
+        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        if cmd_response.get('status'):
+            return True #refres_data (1013)?
+        else:
+            raise ZKErrorResponse("Cant send chunk")
+
+    def delete_user_template(self, uid, temp_id=0):
         """
         Delete specific template
         """
@@ -540,13 +622,13 @@ class ZK(object):
         checksum = 0
         session_id = self.__sesion_id
         reply_id = self.__reply_id
-        response_size = 1024
+        response_size = 8
 
         cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
         if cmd_response.get('status'):
             return True #refres_data (1013)?
         else:
-            raise ZKErrorResponse("Invalid response")
+            return False # probably empty!
 
     def delete_user(self, uid):
         '''
@@ -554,9 +636,9 @@ class ZK(object):
         '''
         command = const.CMD_DELETE_USER
 
-        uid = chr(uid % 256) + chr(uid >> 8)
-
-        command_string = pack('2s', uid)
+        #uid = chr(uid % 256) + chr(uid >> 8)
+        #command_string = pack('2s', uid)
+        command_string = pack('h', uid)
         checksum = 0
         session_id = self.__sesion_id
         reply_id = self.__reply_id
@@ -599,7 +681,7 @@ class ZK(object):
                 #print "still needs %s" % bytes
         data = ''.join(data)
         #uid 32 fing 03, starts with 4d-9b-53-53-32-31
-        return Finger(size + 6, uid, temp_id, 1, data) # TODO: confirm
+        return Finger(size, uid, temp_id, 1, data)
 
     def get_templates(self):
         """ return array of all fingers """
@@ -623,7 +705,7 @@ class ZK(object):
             while total_size:
                 size, uid, fid, valid = unpack('HHbb',templatedata[:6])
                 template = unpack("%is" % (size-6), templatedata[6:size])[0]
-                finger = Finger(size, uid, fid, valid, template)
+                finger = Finger(size - 6, uid, fid, valid, template)
                 print finger # test
                 templates.append(finger)
                 templatedata = templatedata[(size):]
@@ -650,7 +732,7 @@ class ZK(object):
                 #TODO: check card value and find in ver8                                
                 if not name:
                     name = "NN-%s" % user_id
-                user = User(uid, name, privilege, password, group_id, user_id)
+                user = User(uid, name, privilege, password, group_id, user_id, card)
                 users.append(user)
                 print "[6]user:",uid, privilege, password, name, card, group_id, timezone, user_id
                 userdata = userdata[28:]
@@ -766,8 +848,18 @@ class ZK(object):
         '''
         command = const.CMD_STARTVERIFY
         # uid = chr(uid % 256) + chr(uid >> 8)
-        cmd_response = self.__send_command(command=command)
-        print cmd_response
+        command_string = ''
+        checksum = 0
+        session_id = self.__sesion_id
+        reply_id = self.__reply_id
+        response_size = 8
+        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        print 'verify',  cmd_response
+        if cmd_response.get('status'):
+            return True
+        else:
+            raise ZKErrorResponse("Cant Verify")
+
 
     def enroll_user(self, uid, temp_id=0):
         '''
@@ -781,7 +873,12 @@ class ZK(object):
         response_size = 8
 
         cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
-        print cmd_response
+        if not cmd_response.get('status'):
+            raise ZKErrorResponse("Cant Enroll user #%i [%i]" %(uid, temp_id))
+        print "enroll", cmd_response
+        #retorna rapido toca esperar un reg event
+        data_recv = self.__sock.recv(1032) # timeout? tarda bastante...
+        print data_recv
 
     def clear_data(self):
         '''
@@ -834,7 +931,7 @@ class ZK(object):
 
     def read_with_buffer(self, command, fct=0 ,ext=0):
         """ Test read info with buffered command (ZK6: 1503) """
-        MAX_CHUNK = 16 * 1204
+        MAX_CHUNK = 16 * 1024
         command_string = pack('<bhii', 1, command, fct, ext)
         #print "rwb cs", command_string
         checksum = 0
