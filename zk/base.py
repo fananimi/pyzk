@@ -46,14 +46,9 @@ def make_commkey(key, session_id, ticks=50):
     return k
 
 class ZK(object):
-
-    is_connect = False
-
-    __data_recv = None
-    __sesion_id = 0
-    __reply_id = 0
-
+    """ Clase ZK """
     def __init__(self, ip, port=4370, timeout=60, password=0, firmware=8):
+        """ initialize instance """
         self.is_connect = False
         self.__address = (ip, port)
         self.__sock = socket(AF_INET, SOCK_DGRAM)
@@ -71,11 +66,17 @@ class ZK(object):
         self.fingers_av = 0
         self.users_av = 0
         self.rec_av = 0
-    def __create_header(self, command, command_string, checksum, session_id, reply_id):
+        self.__session_id = 0
+        self.__reply_id = const.USHRT_MAX-1
+        self.__data_recv = None
+    def __create_header(self, command, command_string, session_id, reply_id):
         '''
         Puts a the parts that make up a packet together and packs them into a byte string
+
+        MODIFIED now, without initial checksum
         '''
-        buf = pack('HHHH', command, checksum, session_id, reply_id) + command_string
+        #checksum = 0 always? for calculating
+        buf = pack('HHHH', command, 0, session_id, reply_id) + command_string
         buf = unpack('8B' + '%sB' % len(command_string), buf)
         checksum = unpack('H', self.__create_checksum(buf))[0]
         reply_id += 1
@@ -111,11 +112,12 @@ class ZK(object):
 
         return pack('H', checksum)
 
-    def __send_command(self, command, command_string, checksum, session_id, reply_id, response_size):
+    def __send_command(self, command, command_string='', response_size=8):
         '''
         send command to the terminal
         '''
-        buf = self.__create_header(command, command_string, checksum, session_id, reply_id)
+
+        buf = self.__create_header(command, command_string, self.__session_id, self.__reply_id)
         try:
             self.__sock.sendto(buf, self.__address)
             self.__data_recv = self.__sock.recv(response_size)
@@ -125,16 +127,23 @@ class ZK(object):
         self.__response = unpack('HHHH', self.__data_recv[:8])[0]
         self.__reply_id = unpack('HHHH', self.__data_recv[:8])[3]
 
-        if self.__response in [const.CMD_ACK_OK, const.CMD_PREPARE_DATA]:
+        if self.__response in [const.CMD_ACK_OK, const.CMD_PREPARE_DATA, const.CMD_DATA]:
             return {
                 'status': True,
                 'code': self.__response
             }
-        else:
-            return {
-                'status': False,
-                'code': self.__response
-            }
+        return {
+            'status': False,
+            'code': self.__response
+        }
+    def __ack_ok(self):
+        """ ack ok """
+        buf = self.__create_header(const.CMD_ACK_OK, "", self.__session_id, const.USHRT_MAX - 1)
+        try:
+            self.__sock.sendto(buf, self.__address)
+        except Exception, e:
+            raise ZKNetworkError(str(e))
+
 
     def __get_data_size(self):
         """Checks a returned packet to see if it returned CMD_PREPARE_DATA,
@@ -197,96 +206,63 @@ class ZK(object):
         '''
         connect to the device
         '''
-        command = const.CMD_CONNECT
-        command_string = ''
-        checksum = 0
-        session_id = 0
-        reply_id = const.USHRT_MAX - 1
-        response_size = 8
-
-        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
-        self.__sesion_id = unpack('HHHH', self.__data_recv[:8])[2]
+        self.__session_id = 0
+        self.__reply_id = const.USHRT_MAX - 1
+        cmd_response = self.__send_command(const.CMD_CONNECT)
+        self.__session_id = unpack('HHHH', self.__data_recv[:8])[2]
         if cmd_response.get('code')==const.CMD_ACK_UNAUTH:
             #print "try auth"
-            command_string = make_commkey(self.__password,self.__sesion_id)
-            cmd_response = self.__send_command(const.CMD_AUTH, command_string , checksum, self.__sesion_id, self.__reply_id, response_size)
+            command_string = make_commkey(self.__password, self.__session_id)
+            cmd_response = self.__send_command(const.CMD_AUTH, command_string)
         if cmd_response.get('status'):
             self.is_connect = True
             # set the session iduid, privilege, password, name, card, group_id, timezone, user_id = unpack('HB5s8s5sBhI',userdata.ljust(28)[:28])
             return self
         else:
             print "connect err {} ".format(cmd_response["code"])
-            raise ZKErrorResponse("Invalid response")
+            raise ZKErrorResponse("Invalid response: Can't connect")
 
     def disconnect(self):
         '''
         diconnect from the connected device
         '''
-        command = const.CMD_EXIT
-        command_string = ''
-        checksum = 0
-        session_id = self.__sesion_id
-        reply_id = self.__reply_id
-        response_size = 8
-
-        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        cmd_response = self.__send_command(const.CMD_EXIT)
         if cmd_response.get('status'):
             self.is_connect = False
             return True
         else:
-            raise ZKErrorResponse("Invalid response")
+            raise ZKErrorResponse("can't disconnect")
 
     def disable_device(self):
         '''
         disable (lock) device, ensure no activity when process run
         '''
-        command = const.CMD_DISABLEDEVICE
-        command_string = ''
-        checksum = 0
-        session_id = self.__sesion_id
-        reply_id = self.__reply_id
-        response_size = 8
-
-        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        cmd_response = self.__send_command(const.CMD_DISABLEDEVICE)
         if cmd_response.get('status'):
             return True
         else:
-            raise ZKErrorResponse("Invalid response")
+            raise ZKErrorResponse("Can't Disable")
 
     def enable_device(self):
         '''
         re-enable the connected device
         '''
-        command = const.CMD_ENABLEDEVICE
-        command_string = ''
-        checksum = 0
-        session_id = self.__sesion_id
-        reply_id = self.__reply_id
-        response_size = 8
-
-        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        cmd_response = self.__send_command(const.CMD_ENABLEDEVICE)
         if cmd_response.get('status'):
             return True
         else:
-            raise ZKErrorResponse("Invalid response")
+            raise ZKErrorResponse("Can't enable")
 
     def get_firmware_version(self):
         '''
         return the firmware version
         '''
-        command = const.CMD_GET_VERSION
-        command_string = ''
-        checksum = 0
-        session_id = self.__sesion_id
-        reply_id = self.__reply_id
-        response_size = 1024
-
-        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        cmd_response = self.__send_command(const.CMD_GET_VERSION,'', 1024)
         if cmd_response.get('status'):
             firmware_version = self.__data_recv[8:].split('\x00')[0]
             return firmware_version
         else:
-            raise ZKErrorResponse("Invalid response")
+            raise ZKErrorResponse("Can't read frimware version")
 
     def get_serialnumber(self):
         '''
@@ -294,17 +270,13 @@ class ZK(object):
         '''
         command = const.CMD_OPTIONS_RRQ
         command_string = '~SerialNumber'
-        checksum = 0
-        session_id = self.__sesion_id
-        reply_id = self.__reply_id
         response_size = 1024
-
-        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        cmd_response = self.__send_command(command, command_string, response_size)
         if cmd_response.get('status'):
             serialnumber = self.__data_recv[8:].split('=')[-1].split('\x00')[0]
             return serialnumber
         else:
-            raise ZKErrorResponse("Invalid response")
+            raise ZKErrorResponse("can't read serial number")
 
     def get_platform(self):
         '''
@@ -312,17 +284,14 @@ class ZK(object):
         '''
         command = const.CMD_OPTIONS_RRQ
         command_string = '~Platform'
-        checksum = 0
-        session_id = self.__sesion_id
-        reply_id = self.__reply_id
         response_size = 1024
 
-        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        cmd_response = self.__send_command(command, command_string, response_size)
         if cmd_response.get('status'):
             platform = self.__data_recv[8:].split('=')[-1].split('\x00')[0]
             return platform
         else:
-            raise ZKErrorResponse("Invalid response")
+            raise ZKErrorResponse("can't get platform")
 
     def get_device_name(self):
         '''
@@ -330,17 +299,14 @@ class ZK(object):
         '''
         command = const.CMD_OPTIONS_RRQ
         command_string = '~DeviceName'
-        checksum = 0
-        session_id = self.__sesion_id
-        reply_id = self.__reply_id
         response_size = 1024
 
-        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        cmd_response = self.__send_command(command, command_string, response_size)
         if cmd_response.get('status'):
             device = self.__data_recv[8:].split('=')[-1].split('\x00')[0]
             return device
         else:
-            raise ZKErrorResponse("Invalid response")
+            raise ZKErrorResponse("can't read device name")
 
     def get_pin_width(self):
         '''
@@ -348,43 +314,30 @@ class ZK(object):
         '''
         command = const.CMD_GET_PINWIDTH
         command_string = ' P'
-        checksum = 0
-        session_id = self.__sesion_id
-        reply_id = self.__reply_id
-        response_size = 1024
+        response_size = 9
 
-        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        cmd_response = self.__send_command(command, command_string, response_size)
         if cmd_response.get('status'):
             width = self.__data_recv[8:].split('\x00')[0]
             return bytearray(width)[0]
         else:
-            raise ZKErrorResponse("Invalid response")
+            raise ZKErrorResponse("can0t get pin width")
 
     def free_data(self):
         """ clear buffer"""
         command = const.CMD_FREE_DATA
-        command_string = ''
-        checksum = 0
-        session_id = self.__sesion_id
-        reply_id = self.__reply_id
-        response_size = 1024
-
-        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        cmd_response = self.__send_command(command)
         if cmd_response.get('status'):
             return True
         else:
-            raise ZKErrorResponse("Invalid response")
+            raise ZKErrorResponse("can't free data")
 
     def read_sizes(self):
         """ read sizes """
         command = const.CMD_GET_FREE_SIZES
-        command_string = ''
-        checksum = 0
-        session_id = self.__sesion_id
-        reply_id = self.__reply_id
         response_size = 1024
 
-        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        cmd_response = self.__send_command(command,'', response_size)
         if cmd_response.get('status'):
             fields = unpack('iiiiiiiiiiiiiiiiiiii', self.__data_recv[8:])
             self.users = fields[4]
@@ -402,7 +355,7 @@ class ZK(object):
 
             return True
         else:
-            raise ZKErrorResponse("Invalid response")
+            raise ZKErrorResponse("can't read sizes")
 
     def __str__(self):
         """ for debug"""
@@ -417,46 +370,31 @@ class ZK(object):
         restart the device
         '''
         command = const.CMD_RESTART
-        command_string = ''
-        checksum = 0
-        session_id = self.__sesion_id
-        reply_id = self.__reply_id
-        response_size = 8
-
-        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        cmd_response = self.__send_command(command)
         if cmd_response.get('status'):
             return True
         else:
-            raise ZKErrorResponse("Invalid response")
+            raise ZKErrorResponse("can't restart device")
 
     def get_time(self):
         """obtener la hora del equipo"""
         command = const.CMD_GET_TIME
-        command_string = ''
-        checksum = 0
-        session_id = self.__sesion_id
-        reply_id = self.__reply_id
         response_size = 1032
-
-        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        cmd_response = self.__send_command(command, '', response_size)
         if cmd_response.get('status'):
             return self.__decode_time(self.__data_recv[8:12])
         else:
-            raise ZKErrorResponse("Invalid response")
+            raise ZKErrorResponse("can't get time")
 
     def set_time(self, timestamp):
         """ colocar la hora del sistema al zk """
         command = const.CMD_SET_TIME
         command_string = pack(b'I', self.__encode_time(timestamp))
-        checksum = 0
-        session_id = self.__sesion_id
-        reply_id = self.__reply_id
-        response_size = 8
-        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        cmd_response = self.__send_command(command, command_string)
         if cmd_response.get('status'):
             return True
         else:
-            raise ZKErrorResponse("Invalid response")
+            raise ZKErrorResponse("can't set time")
         
     def poweroff(self):
         '''
@@ -464,50 +402,34 @@ class ZK(object):
         '''
         command = const.CMD_POWEROFF
         command_string = ''
-        checksum = 0
-        session_id = self.__sesion_id
-        reply_id = self.__reply_id
         response_size = 1032
-
-        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        cmd_response = self.__send_command(command, command_string, response_size)
         if cmd_response.get('status'):
             return True
         else:
-            raise ZKErrorResponse("Invalid response")
+            raise ZKErrorResponse("can't poweroff")
 
     def refresh_data(self):
         '''
         shutdown the device
         '''
         command = const.CMD_REFRESHDATA
-        command_string = ''
-        checksum = 0
-        session_id = self.__sesion_id
-        reply_id = self.__reply_id
-        response_size = 8
-
-        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        cmd_response = self.__send_command(command)
         if cmd_response.get('status'):
             return True
         else:
-            raise ZKErrorResponse("Invalid response")
+            raise ZKErrorResponse("can't refresh data")
 
     def test_voice(self):
         '''
         play test voice
         '''
-        command = const.CMD_TESTVOICEuid, privilege, password, name, card, group_id, timezone, user_id = unpack('HB5s8s5sBhI',userdata.ljust(28)[:28])
-        command_string = ''
-        checksum = 0
-        session_id = self.__sesion_id
-        reply_id = self.__reply_id
-        response_size = 8
-
-        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        command = const.CMD_TESTVOICE
+        cmd_response = self.__send_command(command)
         if cmd_response.get('status'):
             return True
         else:
-            raise ZKErrorResponse("Invalid response")
+            raise ZKErrorResponse("can't test voice")
 
     def set_user(self, uid, name, privilege=0, password='', group_id='', user_id='', card=0):
         '''
@@ -537,12 +459,8 @@ class ZK(object):
                 raise ZKErrorResponse("Cant pack user")
         else:
             command_string = pack('Hc8s28sc7sx24s', uid, privilege, password, name, chr(0), group_id, user_id)
-        checksum = 0
-        session_id = self.__sesion_id
-        reply_id = self.__reply_id
         response_size = 1024
-
-        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        cmd_response = self.__send_command(command, command_string, response_size)
         if cmd_response.get('status'):
             return True
         else:
@@ -568,11 +486,7 @@ class ZK(object):
         self._send_with_buffer(packet)
         command = 110 # Unknown
         command_string = pack('<IHH', 12,0,8) # ??? write? WRQ user data?
-        checksum = 0
-        session_id = self.__sesion_id
-        reply_id = self.__reply_id
-        response_size = 8
-        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        cmd_response = self.__send_command(command, command_string)
         if not cmd_response.get('status'):
             raise ZKErrorResponse("Cant save utemp")
         self.refresh_data()
@@ -585,11 +499,7 @@ class ZK(object):
         # send prepare_data
         command = const.CMD_PREPARE_DATA
         command_string = pack('I', size)
-        checksum = 0
-        session_id = self.__sesion_id
-        reply_id = self.__reply_id
-        response_size = 8
-        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        cmd_response = self.__send_command(command, command_string)
         if not cmd_response.get('status'):
             raise ZKErrorResponse("Cant prepare data")
         remain = size % MAX_CHUNK
@@ -603,11 +513,7 @@ class ZK(object):
 
     def __send_chunk(self, command_string):
         command = const.CMD_DATA
-        checksum = 0
-        session_id = self.__sesion_id
-        reply_id = self.__reply_id
-        response_size = 8
-        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        cmd_response = self.__send_command(command, command_string)
         if cmd_response.get('status'):
             return True #refres_data (1013)?
         else:
@@ -619,12 +525,7 @@ class ZK(object):
         """
         command = const.CMD_DELETE_USERTEMP
         command_string = pack('hb', uid, temp_id)
-        checksum = 0
-        session_id = self.__sesion_id
-        reply_id = self.__reply_id
-        response_size = 8
-
-        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        cmd_response = self.__send_command(command, command_string)
         if cmd_response.get('status'):
             return True #refres_data (1013)?
         else:
@@ -635,32 +536,23 @@ class ZK(object):
         delete specific user by uid
         '''
         command = const.CMD_DELETE_USER
-
         #uid = chr(uid % 256) + chr(uid >> 8)
         #command_string = pack('2s', uid)
         command_string = pack('h', uid)
-        checksum = 0
-        session_id = self.__sesion_id
-        reply_id = self.__reply_id
-        response_size = 1024
-
-        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        cmd_response = self.__send_command(command, command_string)
         if cmd_response.get('status'):
             return True
         else:
-            raise ZKErrorResponse("Invalid response")
+            raise ZKErrorResponse("can't delete user")
 
     def get_user_template(self, uid, temp_id):
         command = 88 # comando secreto!!!
         command_string = pack('hb', uid, temp_id)
-        checksum = 0
-        session_id = self.__sesion_id
-        reply_id = self.__reply_id
         response_size = 1024
-        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        cmd_response = self.__send_command(command, command_string, response_size)
         data = []
         if not cmd_response.get('status'):
-            raise ZKErrorResponse("Invalid response")
+            raise ZKErrorResponse("can't get user template")
         #else
         if cmd_response.get('code') == const.CMD_PREPARE_DATA:
             bytes = self.__get_data_size() #TODO: check with size
@@ -760,12 +652,9 @@ class ZK(object):
         '''
         command = const.CMD_USERTEMP_RRQ
         command_string = chr(const.FCT_USER)
-        checksum = 0
-        session_id = self.__sesion_id
-        reply_id = self.__reply_id
         response_size = 1024
 
-        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        cmd_response = self.__send_command(command, command_string, response_size)
         users = []
         pac = 0
         if cmd_response.get('status'):
@@ -826,7 +715,7 @@ class ZK(object):
                                 userdata = userdata[72:]
                         self.free_data()
                 else:
-                    raise ZKErrorResponse("Invalid response")
+                    raise ZKErrorResponse("can't _get user")
         return users
 
     def cancel_capture(self):
@@ -834,12 +723,7 @@ class ZK(object):
         cancel capturing finger
         '''
         command = const.CMD_CANCELCAPTURE
-        command_string = ''
-        checksum = 0
-        session_id = self.__sesion_id
-        reply_id = self.__reply_id
-        response_size = 8
-        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        cmd_response = self.__send_command(command)
         return bool(cmd_response.get('status'))
 
     def verify_user(self):
@@ -848,17 +732,20 @@ class ZK(object):
         '''
         command = const.CMD_STARTVERIFY
         # uid = chr(uid % 256) + chr(uid >> 8)
-        command_string = ''
-        checksum = 0
-        session_id = self.__sesion_id
-        reply_id = self.__reply_id
-        response_size = 8
-        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        cmd_response = self.__send_command(command)
         print 'verify',  cmd_response
         if cmd_response.get('status'):
             return True
         else:
             raise ZKErrorResponse("Cant Verify")
+
+    def reg_event(self, flags):
+        """ reg events, """
+        command = const.CMD_REG_EVENT
+        command_string = pack ("I", flags)
+        cmd_response = self.__send_command(command, command_string)
+        if not cmd_response.get('status'):
+            raise ZKErrorResponse("cant' reg events %i" % flags)
 
 
     def enroll_user(self, uid, temp_id=0):
@@ -867,51 +754,76 @@ class ZK(object):
         '''
         command = const.CMD_STARTENROLL
         command_string = pack('hhb', uid, 0, temp_id) # el 0 es misterio
-        checksum = 0
-        session_id = self.__sesion_id
-        reply_id = self.__reply_id
-        response_size = 8
-
-        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        cmd_response = self.__send_command(command, command_string)
         if not cmd_response.get('status'):
             raise ZKErrorResponse("Cant Enroll user #%i [%i]" %(uid, temp_id))
         print "enroll", cmd_response
         #retorna rapido toca esperar un reg event
+        attempts = 3
+        while attempts:
+            print "A:%i esperando primer regevent" % attempts
+            data_recv = self.__sock.recv(1032) # timeout? tarda bastante...
+            self.__ack_ok()
+            print (data_recv).encode('hex')
+            if len(data_recv) > 8: #not empty
+                res = unpack("H", data_recv.ljust(16,"\x00")[8:10])[0]
+                print "res", res
+                if res == 6:
+                    print ("posible timeout")
+                    return False
+            print "A:%i esperando 2do regevent" % attempts
+            data_recv = self.__sock.recv(1032) # timeout? tarda bastante...
+            self.__ack_ok()
+            print (data_recv).encode('hex')
+            if len(data_recv) > 8: #not empty
+                res = unpack("H", data_recv.ljust(16,"\x00")[8:10])[0]
+                print "res", res
+                if res == 6:
+                    print ("posible timeout")
+                    return False
+                elif res == 0x64:
+                    print ("ok, continue?")
+                    attempts -= 1
+            
+        print "esperando 3er regevent"
         data_recv = self.__sock.recv(1032) # timeout? tarda bastante...
-        print data_recv
+        self.__ack_ok()
+        print (data_recv).encode('hex')
+        res = unpack("H", data_recv.ljust(16,"\x00")[8:10])[0]
+        if res == 4:
+            print "registro Fallido"
+            self.cancel_capture()
+            return False
+        if res  == 0:
+            size = unpack("H", data_recv.ljust(16,"\x00")[10:12])[0]
+            pos = unpack("H", data_recv.ljust(16,"\x00")[12:14])[0]
+            print "enroll ok", size, pos
+            return True
 
     def clear_data(self):
         '''
         clear all data (include: user, attendance report, finger database )
         '''
         command = const.CMD_CLEAR_DATA
-        command_string = ''
-        checksum = 0
-        session_id = self.__sesion_id
-        reply_id = self.__reply_id
-        response_size = 1024
-
-        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        cmd_response = self.__send_command(command)
         if cmd_response.get('status'):
             return True
         else:
-            raise ZKErrorResponse("Invalid response")
+            raise ZKErrorResponse("can't clear data")
 
     def __read_chunk(self, start, size):
         """ read a chunk from buffer """
         command = 1504 #CMD_READ_BUFFER
         command_string = pack('<ii', start, size)
-        #print "rc cs", command_string
-        checksum = 0
-        session_id = self.__sesion_id
-        reply_id = self.__reply_id
-        response_size = 1024
-        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
-        data = []
+        response_size = 1024 + 8
+        cmd_response = self.__send_command(command, command_string, response_size)
         if not cmd_response.get('status'):
-            raise ZKErrorResponse("Invalid response")
+            raise ZKErrorResponse("can't read chunk %i:[%i]" % (start, size))
         #else
+        if cmd_response.get('code') == const.CMD_DATA: # less than 1024!!!
+            return self.__data_recv[8:]
         if cmd_response.get('code') == const.CMD_PREPARE_DATA:
+            data = []
             bytes = self.__get_data_size() #TODO: check with size
             while True: #limitado por respuesta no por tamaño
                 data_recv = self.__sock.recv(1032)
@@ -934,15 +846,12 @@ class ZK(object):
         MAX_CHUNK = 16 * 1024
         command_string = pack('<bhii', 1, command, fct, ext)
         #print "rwb cs", command_string
-        checksum = 0
-        session_id = self.__sesion_id
-        reply_id = self.__reply_id
         response_size = 1024
         data = []
         start = 0
-        cmd_response = self.__send_command(1503, command_string, checksum, session_id, reply_id, response_size)
+        cmd_response = self.__send_command(1503, command_string, response_size)
         if not cmd_response.get('status'):
-            raise ZKErrorResponse("Not supported")
+            raise ZKErrorResponse("RWB Not supported")
         size = unpack('I', self.__data_recv[9:13])[0]  # extra info???
         #print "size fill be %i" % size
         remain = size % MAX_CHUNK
@@ -990,12 +899,8 @@ class ZK(object):
         '''
         command = const.CMD_ATTLOG_RRQ
         command_string = ''
-        checksum = 0
-        session_id = self.__sesion_id
-        reply_id = self.__reply_id
         response_size = 1024
-
-        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        cmd_response = self.__send_command(command, command_string, response_size)
         attendances = []
         if cmd_response.get('status'):
             if cmd_response.get('code') == const.CMD_PREPARE_DATA:
@@ -1042,7 +947,7 @@ class ZK(object):
                                 attendance_data = attendance_data[40:]
                         self.free_data()
                 else:
-                    raise ZKErrorResponse("Invalid response")
+                    raise ZKErrorResponse("can't _get attendance")
         return attendances
 
     def clear_attendance(self):
@@ -1050,13 +955,8 @@ class ZK(object):
         clear all attendance record
         '''
         command = const.CMD_CLEAR_ATTLOG
-        command_string = ''
-        checksum = 0
-        session_id = self.__sesion_id
-        reply_id = self.__reply_id
-        response_size = 1024
-        cmd_response = self.__send_command(command, command_string, checksum, session_id, reply_id, response_size)
+        cmd_response = self.__send_command(command, command_string)
         if cmd_response.get('status'):
             return True
         else:
-            raise ZKErrorResponse("Invalid response")
+            raise ZKErrorResponse("can't clear response")
