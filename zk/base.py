@@ -420,12 +420,80 @@ class ZK(object):
         else:
             raise ZKErrorResponse("can't refresh data")
 
-    def test_voice(self):
+    def test_voice(self, index=0):
         '''
         play test voice
+         0 acceso correcto
+         1 password incorrecto
+         2 la memoria del terminal está llena
+         3 usuario invalido
+         4 intente de nuevo  por favor *
+         5 reintroduszca codigo de usuario
+         6 memoria del terminal llena
+         7 memoria de alm fich llena
+         8 huella duplicada
+         9 acceso denegado
+         10 *beep*
+         11 el sistema vuelve al modo de verificacion
+         12 por favor coloque su dedo  o acerque tarjeta
+         13 acerca su tarjeta de nuevo
+         14 excedido tiempo p esta operacion
+         15 coloque su dedo de nuevo
+         16 coloque su dedo por ultima vez
+         17 ATN numero de tarjeta está repetida
+         18 proceso de registro correcto *
+         19 borrado correcto
+         20 Numero de usuario
+         21 ATN se ha llegado al max num usuarios
+         22 verificacion de usuarios
+         23 usuario no registrado
+         24 ATN se ha llegado al num max de registros
+         25 ATN la puerta no esta cerrada
+         26 registro de usuarios
+         27 borrado de usuarios
+         28 coloque su dedo
+         29 registre la tarjeta de administrador
+         30 0
+         31 1
+         32 2
+         33 3
+         34 4
+         35 5
+         36 6
+         37 7
+         38 8
+         39 9
+         40 PFV seleccione numero de usuario
+         41 registrar
+         42 operacion correcta
+         43 PFV acerque su tarjeta
+         43 la tarjeta ha sido registrada
+         45 error en operacion
+         46 PFV acerque tarjeta de administracion, p confirmacion
+         47 descarga de fichajes
+         48 descarga de usuarios
+         49 carga de usuarios
+         50 actualizan de firmware
+         51 ejeuctar ficheros de configuracion
+         52 confirmación de clave de acceso correcta
+         53 error en operacion de tclado
+         54 borrar todos los usuarios
+         55 restaurar terminal con configuracion por defecto
+         56 introduzca numero de usuario
+         57 teclado bloqueado
+         58 error en la gestión de la tarjeta
+         59 establezca una clave de acceso
+         60 pulse el teclado 
+         61 zona de accceso invalida
+         62 acceso combinado invĺlido
+         63 verificación multiusuario
+         64 modo de verificación inválido
+         65 -
+
         '''
         command = const.CMD_TESTVOICE
-        cmd_response = self.__send_command(command)
+        command_string = pack("I", index)
+        cmd_response = self.__send_command(command, command_string)
         if cmd_response.get('status'):
             return True
         else:
@@ -552,7 +620,7 @@ class ZK(object):
         cmd_response = self.__send_command(command, command_string, response_size)
         data = []
         if not cmd_response.get('status'):
-            raise ZKErrorResponse("can't get user template")
+            return None #("can't get user template")
         #else
         if cmd_response.get('code') == const.CMD_PREPARE_DATA:
             bytes = self.__get_data_size() #TODO: check with size
@@ -728,12 +796,11 @@ class ZK(object):
 
     def verify_user(self):
         '''
-        verify finger
+        start verify finger mode (after capture)
         '''
         command = const.CMD_STARTVERIFY
         # uid = chr(uid % 256) + chr(uid >> 8)
         cmd_response = self.__send_command(command)
-        print 'verify',  cmd_response
         if cmd_response.get('status'):
             return True
         else:
@@ -877,11 +944,13 @@ class ZK(object):
         if self.__firmware == 6:
             while len(attendance_data) >= 8:
                 uid, status, timestamp = unpack('HH4s', attendance_data.ljust(8)[:8])
+                attendance_data = attendance_data[8:]
+                if uid == 0: #(on zk  it's 16 bytes, extrauid 0, status 255, timestamp 0x0)
+                    continue # probably
                 user_id = str(uid) #TODO revisar posibles valores cruzar con userdata
                 timestamp = self.__decode_time(timestamp)
                 attendance = Attendance(uid, user_id, timestamp, status)
                 attendances.append(attendance)
-                attendance_data = attendance_data[8:]
         else:
             while len(attendance_data) >= 40:
                 uid, user_id, sparator, timestamp, status, space = unpack('H24sc4sc8s', attendance_data.ljust(40)[:40])
@@ -929,11 +998,13 @@ class ZK(object):
                         if self.__firmware == 6:
                             while len(attendance_data) >= 8:
                                 uid, status, timestamp = unpack('HH4s', attendance_data.ljust(8)[:8])
+                                attendance_data = attendance_data[8:]
+                                if uid == 0: #(on zk  it's 16 bytes, extrauid 0, status 255, timestamp 0x0)
+                                    continue # probably
                                 user_id = str(uid) #TODO revisar posibles valores cruzar con userdata
                                 timestamp = self.__decode_time(timestamp)
                                 attendance = Attendance(uid, user_id, timestamp, status)
                                 attendances.append(attendance)
-                                attendance_data = attendance_data[8:]
                         else:
                             while len(attendance_data) >= 40:
                                 uid, user_id, sparator, timestamp, status, space = unpack('H24sc4sc8s', attendance_data.ljust(40)[:40])
