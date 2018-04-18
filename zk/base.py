@@ -698,7 +698,7 @@ class ZK(object):
                 userdata = userdata[28:]
         else:
             while len(userdata) >= 72:
-                uid, privilege, password, name, sparator, group_id, user_id = unpack('Hc8s28sc7sx24s', userdata.ljust(72)[:72])
+                uid, privilege, password, name, separator, group_id, user_id = unpack('Hc8s24s4sx7sx24s', userdata.ljust(72)[:72])
                 #u1 = int(uid[0].encode("hex"), 16)
                 #u2 = int(uid[1].encode("hex"), 16)
                 #uid = u1 + (u2 * 256)
@@ -707,9 +707,10 @@ class ZK(object):
                 name = unicode(name.split('\x00')[0], errors='ignore').strip()
                 group_id = unicode(group_id.split('\x00')[0], errors='ignore').strip()
                 user_id = unicode(user_id.split('\x00')[0], errors='ignore')
+                card = int(unpack('I', separator)[0])
                 if not name:
                     name = "NN-%s" % user_id
-                user = User(uid, name, privilege, password, group_id, user_id)
+                user = User(uid, name, privilege, password, group_id, user_id, card)
                 users.append(user)
                 userdata = userdata[72:]
         return users
