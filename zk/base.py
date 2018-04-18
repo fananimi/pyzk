@@ -676,7 +676,7 @@ class ZK(object):
         """ return all user """
         users = []
         userdata, size = self.read_with_buffer(const.CMD_USERTEMP_RRQ, const.FCT_USER)
-        print "user size %i" % size
+        #print "user size %i" % size
         if size < 4:
             print "WRN: no user data" # debug
             return []
