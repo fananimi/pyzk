@@ -526,7 +526,9 @@ class ZK(object):
                 print "Error pack: %s" % sys.exc_info()[0]
                 raise ZKErrorResponse("Cant pack user")
         else:
-            command_string = pack('Hc8s28sc7sx24s', uid, privilege, password, name, chr(0), group_id, user_id)
+            name_pad = name.ljust(24, '\x00')[:24]
+            card_str = pack('i', int(card))[:4]
+            command_string = pack('Hc8s24s4sc7sx24s', uid, privilege, password, name_pad, card_str, chr(0), group_id, user_id)
         response_size = 1024
         cmd_response = self.__send_command(command, command_string, response_size)
         if cmd_response.get('status'):
