@@ -533,8 +533,10 @@ class ZK(object):
             return True
         else:
             raise ZKErrorResponse("Cant set user")
+
     def save_user_template(self, user, fingers=[]):
         """ save user and template """
+        #TODO: grabado global
         # armar paquete de huellas
         if isinstance(fingers, Finger):
             fingers =[Finger]
@@ -544,9 +546,8 @@ class ZK(object):
         tstart = 0
         for finger in fingers:
             tfp = finger.repack_only()
-            table += pack("<bHbI", 2, user.uid, fnum, tstart)
+            table += pack("<bHbI", 2, user.uid, fnum + finger.fid, tstart)
             tstart += len(tfp)
-            fnum += 1 # hack 
             fpack += tfp
         upack = user.repack29()
         head = pack("III", len(upack), len(table), len(fpack))
@@ -868,12 +869,14 @@ class ZK(object):
             print "enroll ok", size, pos
             return True
 
-    def clear_data(self):
+    def clear_data(self, clear_type=5): # FCT_USER
         '''
         clear all data (include: user, attendance report, finger database )
+        2 = FCT_FINGERTMP
         '''
         command = const.CMD_CLEAR_DATA
-        cmd_response = self.__send_command(command)
+        command_string = pack("B", clear_type)
+        cmd_response = self.__send_command(command, command_string)
         if cmd_response.get('status'):
             return True
         else:

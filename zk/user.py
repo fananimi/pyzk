@@ -4,9 +4,9 @@ class User(object):
 
     def __init__(self, uid, name, privilege, password='', group_id='', user_id='', card=0):
         self.uid = uid
-        self.name = name
+        self.name = str(name)
         self.privilege = privilege
-        self.password = password
+        self.password = str(password)
         self.group_id = group_id
         self.user_id = user_id
         self.card = card # 64 int to 40 bit int
@@ -14,7 +14,7 @@ class User(object):
         return pack("<BHB5s8s5sBhI", 2, self.uid, self.privilege, self.password, self.name, pack("Q", self.card), int(self.group_id), 0, int(self.user_id))
 
     def __str__(self):
-        return '<User>: {}'.format(self.name)
+        return '<User>: [uid:{}, name:{} user_id:{}]'.format(self.uid, self.name, self.user_id)
 
     def __repr__(self):
         return '<User>: {}'.format(self.name)
