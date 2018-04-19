@@ -526,7 +526,9 @@ class ZK(object):
                 print "Error pack: %s" % sys.exc_info()[0]
                 raise ZKErrorResponse("Cant pack user")
         else:
-            command_string = pack('Hc8s28sc7sx24s', uid, privilege, password, name, chr(0), group_id, user_id)
+            name_pad = name.ljust(24, '\x00')[:24]
+            card_str = pack('i', int(card))[:4]
+            command_string = pack('Hc8s24s4sc7sx24s', uid, privilege, password, name_pad, card_str, chr(0), group_id, user_id)
         response_size = 1024
         cmd_response = self.__send_command(command, command_string, response_size)
         if cmd_response.get('status'):
@@ -768,7 +770,7 @@ class ZK(object):
                                 userdata = userdata[28:]
                         else:
                             while len(userdata) >= 72:
-                                uid, privilege, password, name, sparator, group_id, user_id = unpack('Hc8s28sc7sx24s', userdata.ljust(72)[:72])
+                                uid, privilege, password, name, separator, group_id, user_id = unpack('Hc8s24s4sx7sx24s', userdata.ljust(72)[:72])
                                 #u1 = int(uid[0].encode("hex"), 16)
                                 #u2 = int(uid[1].encode("hex"), 16)
                                 #uid = u1 + (u2 * 256)
@@ -777,9 +779,10 @@ class ZK(object):
                                 name = unicode(name.split('\x00')[0], errors='ignore').strip()
                                 group_id = unicode(group_id.split('\x00')[0], errors='ignore').strip()
                                 user_id = unicode(user_id.split('\x00')[0], errors='ignore')
+                                card = int(unpack('I', separator)[0])
                                 if not name:
                                     name = "NN-%s" % user_id
-                                user = User(uid, name, privilege, password, group_id, user_id)
+                                user = User(uid, name, privilege, password, group_id, user_id, card)
                                 users.append(user)
 
                                 userdata = userdata[72:]
