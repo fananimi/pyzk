@@ -293,6 +293,21 @@ class ZK(object):
         else:
             raise ZKErrorResponse("can't get platform")
 
+    def get_mac(self):
+        '''
+        return the serial number
+        '''
+        command = const.CMD_OPTIONS_RRQ
+        command_string = 'MAC'
+        response_size = 1024
+
+        cmd_response = self.__send_command(command, command_string, response_size)
+        if cmd_response.get('status'):
+            mac = self.__data_recv[8:].split('=')[-1].split('\x00')[0]
+            return mac
+        else:
+            raise ZKErrorResponse("can't get mac")
+
     def get_device_name(self):
         '''
         return the serial number
@@ -660,7 +675,7 @@ class ZK(object):
                 size, uid, fid, valid = unpack('HHbb',templatedata[:6])
                 template = unpack("%is" % (size-6), templatedata[6:size])[0]
                 finger = Finger(size, uid, fid, valid, template)
-                print finger # test
+                #print finger # test
                 templates.append(finger)
                 templatedata = templatedata[size:]
                 total_size -= size
@@ -818,8 +833,14 @@ class ZK(object):
         cmd_response = self.__send_command(command, command_string)
         if not cmd_response.get('status'):
             raise ZKErrorResponse("cant' reg events %i" % flags)
-
-
+    
+    def set_sdk_build_1(self):
+        """ """
+        command = const.CMD_OPTIONS_WRQ
+        command_string = "SDKBuild=1"
+        cmd_response = self.__send_command(command, command_string)
+        if not cmd_response.get('status'):
+            raise ZKErrorResponse("can't set sdk build ")
     def enroll_user(self, uid, temp_id=0):
         '''
         start enroll user
@@ -1033,7 +1054,7 @@ class ZK(object):
         clear all attendance record
         '''
         command = const.CMD_CLEAR_ATTLOG
-        cmd_response = self.__send_command(command, command_string)
+        cmd_response = self.__send_command(command)
         if cmd_response.get('status'):
             return True
         else:
