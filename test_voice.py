@@ -1,12 +1,28 @@
 # -*- coding: utf-8 -*-
 import sys
+import argparse
+
 from time import sleep
 from zk import ZK, const
 
 sys.path.append("zk")
+parser = argparse.ArgumentParser(description='ZK Basic Reading Tests')
+parser.add_argument('-a', '--address', 
+                    help='ZK device Addres [192.168.1.201]', default='192.168.1.201')
+parser.add_argument('-p', '--port', type=int,
+                    help='device port [4370]', default=4370)
+parser.add_argument('-T', '--timeout', type=int,
+                    help='timeout [60]', default=60)
+parser.add_argument('-P', '--password', type=int,
+                    help='Device code/password', default=0)
+parser.add_argument('-f', '--firmware', type=int,
+                    help='test firmware', default=8)
+
+args = parser.parse_args()
+
 
 conn = None
-zk = ZK('192.168.1.201', port=4370, timeout=5)
+zk = ZK(args.address, port=args.port, timeout=args.timeout, password=args.password, firmware=args.firmware)
 try:
     print 'Connecting to device ...'
     conn = zk.connect()

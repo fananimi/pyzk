@@ -12,7 +12,10 @@ class User(object):
         self.card = card # 64 int to 40 bit int
     def repack29(self): # with 02 for zk6 (size 29)
         return pack("<BHB5s8s5sBhI", 2, self.uid, self.privilege, self.password, self.name, pack("Q", self.card), int(self.group_id), 0, int(self.user_id))
-
+    def repack73(self): #with 02 for zk8 (size73)
+        #password 6s + 0x00 + 0x77
+        # 0,0 => 7sx group id, timezone?
+        return pack("<BHB8s24sIB7sx24s", 2, self.uid, self.privilege,self.password, self.name, self.card, 1, self.group_id, str(self.user_id))
     def __str__(self):
         return '<User>: [uid:{}, name:{} user_id:{}]'.format(self.uid, self.name, self.user_id)
 

@@ -18,8 +18,8 @@ parser.add_argument('-T', '--timeout', type=int,
                     help='timeout', default=60)
 parser.add_argument('-P', '--password', type=int,
                     help='Device code/password', default=0)
-parser.add_argument('-f', '--firmware', type=int,
-                    help='test firmware', default=8)
+#parser.add_argument('-f', '--firmware', type=int,
+#                    help='test firmware', default=8)
 parser.add_argument('-t', '--templates', action="store_true",
                     help='get templates')
 parser.add_argument('-r', '--records', action="store_true",
@@ -27,20 +27,31 @@ parser.add_argument('-r', '--records', action="store_true",
 
 args = parser.parse_args()
 
-zk = ZK(args.address, port=args.port, timeout=args.timeout, password=args.password, firmware=args.firmware)
+zk = ZK(args.address, port=args.port, timeout=args.timeout, password=args.password) # , firmware=args.firmware
 try:
     print 'Connecting to device ...'
     conn = zk.connect()
     print 'Disabling device ...'
     conn.disable_device()
+    fmt = conn.get_extend_fmt()
+    print 'ExtendFmt        : {}'.format(fmt)
+    if fmt == 1:
+        print "Firmware 6"
+        conn.firmware = 6
+    else:
+        print "Firmware 8"
+        conn.firmware = 8
+    
+    print 'Time             : {}'.format(conn.get_time())
+    print 'Firmware Version : {}'.format(conn.get_firmware_version())
+    print 'Platform         : %s' % conn.get_platform()
+    print 'DeviceName       : %s' % conn.get_device_name()
+    print 'Pin Width        : %i' % conn.get_pin_width()
+    print 'Serial Number    : %s' % conn.get_serialnumber()
+    print 'MAC: %s' % conn.get_mac()
+    print ''
     conn.read_sizes()
     print conn
-    print 'Firmware Version: : {}'.format(conn.get_firmware_version())
-    print 'Platform: %s' % conn.get_platform()
-    print 'DeviceName: %s' % conn.get_device_name()
-    print 'Pin Width: %i' % conn.get_pin_width()
-    print 'Serial Number: %s' % conn.get_serialnumber()
-    print 'MAC: %s' % conn.get_mac()
     print ''
     print '--- Get User ---'
     users = conn.get_users()
@@ -51,6 +62,7 @@ try:
 
         print '-> UID #{:<5} Name     : {:<27} Privilege : {}'.format(user.uid, user.name, privilege)
         print '              Group ID : {:<8} User ID : {:<8} Password  : {:<8} Card : {}'.format(user.group_id, user.user_id, user.password, user.card)
+        #print len (user.repack73()), user.repack73().encode('hex')
         #print ''
     print "Voice Test ..."
     conn.test_voice(10)
@@ -68,6 +80,7 @@ try:
     conn.enable_device()
 except Exception, e:
     print "Process terminate : {}".format(e)
+    print "Error: %s" % sys.exc_info()[0]
 finally:
     if conn:
         conn.disconnect()

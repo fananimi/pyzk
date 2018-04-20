@@ -54,7 +54,7 @@ class ZK(object):
         self.__sock = socket(AF_INET, SOCK_DGRAM)
         self.__sock.settimeout(timeout)
         self.__password = password # passint
-        self.__firmware = int(firmware) #TODO check minor version?
+        self.firmware = int(firmware) #TODO check minor version?
         self.users = 0
         self.fingers = 0
         self.records = 0
@@ -63,6 +63,8 @@ class ZK(object):
         self.fingers_cap = 0
         self.users_cap = 0
         self.rec_cap = 0
+        self.faces = 0
+        self.faces_cap = 0
         self.fingers_av = 0
         self.users_av = 0
         self.rec_av = 0
@@ -323,6 +325,22 @@ class ZK(object):
         else:
             raise ZKErrorResponse("can't read device name")
 
+    def get_extend_fmt(self):
+        '''
+        determine extend fmt
+        '''
+        command = const.CMD_OPTIONS_RRQ
+        command_string = '~ExtendFmt'
+        response_size = 1024
+
+        cmd_response = self.__send_command(command, command_string, response_size)
+        if cmd_response.get('status'):
+            fmt = int(self.__data_recv[8:].split('=')[-1].split('\x00')[0])
+            #definitivo? seleccionar firmware aqui?
+            return fmt
+        else:
+            raise ZKErrorResponse("can't read extend fmt")
+
     def get_pin_width(self):
         '''
         return the serial number
@@ -354,7 +372,11 @@ class ZK(object):
 
         cmd_response = self.__send_command(command,'', response_size)
         if cmd_response.get('status'):
-            fields = unpack('iiiiiiiiiiiiiiiiiiii', self.__data_recv[8:])
+            size = len(self.__data_recv[8:]) 
+            if size == 80:
+                fields = unpack('iiiiiiiiiiiiiiiiiiii', self.__data_recv[8:])
+            else: #92?
+                fields = unpack('iiiiiiiiiiiiiiiiiiiiiii', self.__data_recv[8:])
             self.users = fields[4]
             self.fingers = fields[6]
             self.records = fields[8]
@@ -366,6 +388,9 @@ class ZK(object):
             self.fingers_av = fields[17]
             self.users_av = fields[18]
             self.rec_av = fields[19]
+            if len(fields) > 20:
+                self.faces = fields[20]
+                self.faces_cap = fields[22]
             #TODO: get faces size...
 
             return True
@@ -374,10 +399,10 @@ class ZK(object):
 
     def __str__(self):
         """ for debug"""
-        return "ZK%i adr:%s:%s users:%i/%i fingers:%i/%i, records:%i/%i" % (
-            self.__firmware, self.__address[0], self.__address[1],
+        return "ZK%i adr:%s:%s users:%i/%i fingers:%i/%i, records:%i/%i faces:%i/%i" % (
+            self.firmware, self.__address[0], self.__address[1],
             self.users, self.users_cap, self.fingers, self.fingers_cap,
-            self.records, self.rec_cap
+            self.records, self.rec_cap, self.faces, self.faces_cap
         )
 
     def restart(self):
@@ -439,71 +464,71 @@ class ZK(object):
         '''
         play test voice
          0 acceso correcto
-         1 password incorrecto
-         2 la memoria del terminal está llena
-         3 usuario invalido
-         4 intente de nuevo  por favor *
-         5 reintroduszca codigo de usuario
-         6 memoria del terminal llena
-         7 memoria de alm fich llena
-         8 huella duplicada
-         9 acceso denegado
-         10 *beep*
-         11 el sistema vuelve al modo de verificacion
-         12 por favor coloque su dedo  o acerque tarjeta
-         13 acerca su tarjeta de nuevo
-         14 excedido tiempo p esta operacion
-         15 coloque su dedo de nuevo
-         16 coloque su dedo por ultima vez
-         17 ATN numero de tarjeta está repetida
-         18 proceso de registro correcto *
-         19 borrado correcto
-         20 Numero de usuario
-         21 ATN se ha llegado al max num usuarios
-         22 verificacion de usuarios
-         23 usuario no registrado
-         24 ATN se ha llegado al num max de registros
-         25 ATN la puerta no esta cerrada
-         26 registro de usuarios
-         27 borrado de usuarios
-         28 coloque su dedo
-         29 registre la tarjeta de administrador
-         30 0
-         31 1
-         32 2
-         33 3
-         34 4
-         35 5
-         36 6
-         37 7
-         38 8
-         39 9
-         40 PFV seleccione numero de usuario
-         41 registrar
-         42 operacion correcta
-         43 PFV acerque su tarjeta
-         43 la tarjeta ha sido registrada
-         45 error en operacion
-         46 PFV acerque tarjeta de administracion, p confirmacion
-         47 descarga de fichajes
-         48 descarga de usuarios
-         49 carga de usuarios
-         50 actualizan de firmware
-         51 ejeuctar ficheros de configuracion
-         52 confirmación de clave de acceso correcta
-         53 error en operacion de tclado
-         54 borrar todos los usuarios
-         55 restaurar terminal con configuracion por defecto
-         56 introduzca numero de usuario
-         57 teclado bloqueado
-         58 error en la gestión de la tarjeta
-         59 establezca una clave de acceso
-         60 pulse el teclado 
-         61 zona de accceso invalida
-         62 acceso combinado invĺlido
-         63 verificación multiusuario
-         64 modo de verificación inválido
-         65 -
+         1 password incorrecto / clave incorrecta
+         2 la memoria del terminal está llena / acceso denegado
+         3 usuario invalido /codigo no valido
+         4 intente de nuevo  por favor / intente de nuevo por favor *
+         5 reintroduszca codigo de usuario /reintroduszca codigo
+         6 memoria del terminal llena /-
+         7 memoria de alm fich llena /-
+         8 huella duplicada / huella duplicada
+         9 acceso denegado / ya ha sido registrado
+         10 *beep* / beep
+         11 el sistema vuelve al modo de verificacion / beep
+         12 por favor coloque su dedo  o acerque tarjeta  /-
+         13 acerca su tarjeta de nuevo  /beep
+         14 excedido tiempo p esta operacion  /-
+         15 coloque su dedo de nuevo  /-
+         16 coloque su dedo por ultima vez  /-
+         17 ATN numero de tarjeta está repetida  /-
+         18 proceso de registro correcto *  /-
+         19 borrado correcto /-
+         20 Numero de usuario / ponga la caja de ojos
+         21 ATN se ha llegado al max num usuarios /-
+         22 verificacion de usuarios /-
+         23 usuario no registrado /-
+         24 ATN se ha llegado al num max de registros /-
+         25 ATN la puerta no esta cerrada /-
+         26 registro de usuarios /-
+         27 borrado de usuarios /-
+         28 coloque su dedo  /-
+         29 registre la tarjeta de administrador /-
+         30 0 /-
+         31 1 /-
+         32 2 /-
+         33 3 /-
+         34 4 /-
+         35 5 /-
+         36 6 /-
+         37 7 /-
+         38 8 /-
+         39 9 /-
+         40 PFV seleccione numero de usuario /-
+         41 registrar /-
+         42 operacion correcta /-
+         43 PFV acerque su tarjeta /-
+         43 la tarjeta ha sido registrada /-
+         45 error en operacion /-
+         46 PFV acerque tarjeta de administracion, p confirmacion /-
+         47 descarga de fichajes /-
+         48 descarga de usuarios /-
+         49 carga de usuarios /-
+         50 actualizan de firmware /-
+         51 ejeuctar ficheros de configuracion /-
+         52 confirmación de clave de acceso correcta /-
+         53 error en operacion de tclado /-
+         54 borrar todos los usuarios /-
+         55 restaurar terminal con configuracion por defecto /-
+         56 introduzca numero de usuario /-
+         57 teclado bloqueado /-
+         58 error en la gestión de la tarjeta  /-
+         59 establezca una clave de acceso /-
+         60 pulse el teclado  /-
+         61 zona de accceso invalida /-
+         62 acceso combinado invĺlido /-
+         63 verificación multiusuario /-
+         64 modo de verificación inválido /-
+         65 - /-
 
         '''
         command = const.CMD_TESTVOICE
@@ -525,7 +550,7 @@ class ZK(object):
         if privilege not in [const.USER_DEFAULT, const.USER_ADMIN]:
             privilege = const.USER_DEFAULT
         privilege = chr(privilege)
-        if self.__firmware == 6:
+        if self.firmware == 6:
             print "uid : %i" % uid
             print "pri : %c" % privilege
             print "pass: %s" % str(password)
@@ -566,7 +591,10 @@ class ZK(object):
             table += pack("<bHbI", 2, user.uid, fnum + finger.fid, tstart)
             tstart += len(tfp)
             fpack += tfp
-        upack = user.repack29()
+        if self.firmware == 6:
+            upack = user.repack29()
+        else:
+            upack = user.repack73()
         head = pack("III", len(upack), len(table), len(fpack))
         packet = head + upack + table + fpack
         self._send_with_buffer(packet)
@@ -670,7 +698,7 @@ class ZK(object):
             return []
         total_size = unpack('i', templatedata[0:4])[0]
         templatedata = templatedata[4:] #total size not used
-        if self.__firmware == 6: #tested!
+        if self.firmware == 6: #tested!
             while total_size:
                 size, uid, fid, valid = unpack('HHbb',templatedata[:6])
                 template = unpack("%is" % (size-6), templatedata[6:size])[0]
@@ -679,12 +707,12 @@ class ZK(object):
                 templates.append(finger)
                 templatedata = templatedata[size:]
                 total_size -= size
-        else: # TODO: test!!!
+        else: # tested with ZEM800_TFT - iFace402/ID
             while total_size:
                 size, uid, fid, valid = unpack('HHbb',templatedata[:6])
                 template = unpack("%is" % (size-6), templatedata[6:size])[0]
                 finger = Finger(size - 6, uid, fid, valid, template)
-                print finger # test
+                #print finger # test
                 templates.append(finger)
                 templatedata = templatedata[(size):]
                 total_size -= size
@@ -699,7 +727,7 @@ class ZK(object):
             print "WRN: no user data" # debug
             return []
         userdata = userdata[4:] #total size not used
-        if self.__firmware == 6:
+        if self.firmware == 6:
             while len(userdata) >= 28:
                 uid, privilege, password, name, card, group_id, timezone, user_id = unpack('HB5s8s5sBhI',userdata.ljust(28)[:28])
                 password = unicode(password.split('\x00')[0], errors='ignore')
@@ -712,7 +740,7 @@ class ZK(object):
                     name = "NN-%s" % user_id
                 user = User(uid, name, privilege, password, group_id, user_id, card)
                 users.append(user)
-                print "[6]user:",uid, privilege, password, name, card, group_id, timezone, user_id
+                #print "[6]user:",uid, privilege, password, name, card, group_id, timezone, user_id
                 userdata = userdata[28:]
         else:
             while len(userdata) >= 72:
@@ -731,79 +759,6 @@ class ZK(object):
                 user = User(uid, name, privilege, password, group_id, user_id, card)
                 users.append(user)
                 userdata = userdata[72:]
-        return users
-        
-    def _get_users(self):
-        '''
-        return all user
-        '''
-        command = const.CMD_USERTEMP_RRQ
-        command_string = chr(const.FCT_USER)
-        response_size = 1024
-
-        cmd_response = self.__send_command(command, command_string, response_size)
-        users = []
-        pac = 0
-        if cmd_response.get('status'):
-            if cmd_response.get('code') == const.CMD_PREPARE_DATA:
-                bytes = self.__get_data_size()
-                userdata = []
-                while True:
-                    data_recv = self.__sock.recv(1032)
-                    response = unpack('HHHH', data_recv[:8])[0]
-                    if response == const.CMD_DATA:
-                        pac += 1
-                        userdata.append(data_recv[8:]) #header turncated
-                        bytes -= 1024
-                    elif response == const.CMD_ACK_OK:
-                        break #without problem.
-                    else:
-                        #truncado! continuar?
-                        #print "broken! with %s" % response
-                        #print "user still needs %s" % bytes
-                        break
-                    
-                if response == const.CMD_ACK_OK:
-                    if userdata:
-                        # The first 4 bytes don't seem to be related to the user
-                        userdata = ''.join(userdata)
-                        userdata = userdata[4:]
-                        if self.__firmware == 6:
-                            while len(userdata) >= 28:
-                                uid, privilege, password, name, card, group_id, timezone, user_id = unpack('HB5s8s5sBhI',userdata.ljust(28)[:28])
-                                password = unicode(password.split('\x00')[0], errors='ignore')
-                                name = unicode(name.split('\x00')[0], errors='ignore').strip()
-                                card = unpack('Q', card.ljust(8,'\x00'))[0] #or hex value?
-                                group_id = str(group_id)
-                                user_id = str(user_id)
-                                #TODO: check card value and find in ver8                                
-                                if not name:
-                                    name = "NN-%s" % user_id
-                                user = User(uid, name, privilege, password, group_id, user_id)
-                                users.append(user)
-                                print "[6]user:",uid, privilege, password, name, card, group_id, timezone, user_id
-                                userdata = userdata[28:]
-                        else:
-                            while len(userdata) >= 72:
-                                uid, privilege, password, name, separator, group_id, user_id = unpack('Hc8s24s4sx7sx24s', userdata.ljust(72)[:72])
-                                #u1 = int(uid[0].encode("hex"), 16)
-                                #u2 = int(uid[1].encode("hex"), 16)
-                                #uid = u1 + (u2 * 256)
-                                privilege = int(privilege.encode("hex"), 16)
-                                password = unicode(password.split('\x00')[0], errors='ignore')
-                                name = unicode(name.split('\x00')[0], errors='ignore').strip()
-                                group_id = unicode(group_id.split('\x00')[0], errors='ignore').strip()
-                                user_id = unicode(user_id.split('\x00')[0], errors='ignore')
-                                card = int(unpack('I', separator)[0])
-                                if not name:
-                                    name = "NN-%s" % user_id
-                                user = User(uid, name, privilege, password, group_id, user_id, card)
-                                users.append(user)
-
-                                userdata = userdata[72:]
-                        self.free_data()
-                else:
-                    raise ZKErrorResponse("can't _get user")
         return users
 
     def cancel_capture(self):
@@ -969,7 +924,7 @@ class ZK(object):
             print "WRN: no attendance data" # debug
             return []
         attendance_data = attendance_data[4:] #total size not used
-        if self.__firmware == 6:
+        if self.firmware == 6:
             while len(attendance_data) >= 8:
                 uid, status, timestamp = unpack('HH4s', attendance_data.ljust(8)[:8])
                 attendance_data = attendance_data[8:]
@@ -1023,7 +978,7 @@ class ZK(object):
                     if attendance_data:
                         attendance_data = ''.join(attendance_data)
                         attendance_data = attendance_data[4:]
-                        if self.__firmware == 6:
+                        if self.firmware == 6:
                             while len(attendance_data) >= 8:
                                 uid, status, timestamp = unpack('HH4s', attendance_data.ljust(8)[:8])
                                 attendance_data = attendance_data[8:]
