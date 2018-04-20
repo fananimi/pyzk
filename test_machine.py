@@ -49,9 +49,9 @@ try:
         if user.privilege == const.USER_ADMIN:
             privilege = 'Admin'
 
-        print '-> UID #{:<8}       Name    : {:<8} Privilege : {}'.format(user.uid, user.name, privilege)
-        print '   Group ID : {:<8} User ID : {:<8} Password  : {:<8} Card : {}'.format(user.group_id, user.user_id, user.password, user.card)
-        print ''
+        print '-> UID #{:<5} Name     : {:<27} Privilege : {}'.format(user.uid, user.name, privilege)
+        print '              Group ID : {:<8} User ID : {:<8} Password  : {:<8} Card : {}'.format(user.group_id, user.user_id, user.password, user.card)
+        #print ''
     print "Voice Test ..."
     conn.test_voice(10)
     if args.templates:
