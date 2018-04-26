@@ -123,6 +123,17 @@ assert(ProtoExpert.new, "Wireshark does not have the ProtoExpert class, so it's 
 ----------------------------------------
 -- creates a Proto object, but doesn't register it yet
 local zk = Proto("zk6","ZK600 UDP Protocol")
+local zk_tcp = Proto("zk8","ZK800 TCP Protocol")
+
+local rfct = {
+	[1] = "FCT_ATTLOG",
+	[8] = "FCT_WORKCODE",
+	[2] = "FCT_FINGERTMP",
+	[4] = "FCT_OPLOG",
+	[5] = "FCT_USER",
+	[6] = "FCT_SMS",
+	[7] = "FCT_UDATA"
+}
 
 local rcomands = {
 	[7] = "CMD_DB_RRQ",
@@ -191,6 +202,8 @@ local rcomands = {
 	[1500] = "CMD_PREPARE_DATA",
 	[1501] = "CMD_DATA",
 	[1502] = "CMD_FREE_DATA",
+	[1503] = "CMD_PREPARE_BUFFER",
+	[1504] = "CMD_READ_BUFFER",
 	[2000] = "CMD_ACK_OK",
 	[2001] = "CMD_ACK_ERROR",
 	[2002] = "CMD_ACK_DATA",
@@ -202,20 +215,67 @@ local rcomands = {
 	[65532] = "CMD_ACK_ERROR_INIT",
 	[65531] = "CMD_ACK_ERROR_DATA"
 }
+local rmachines = {
+	[20560] = "MACHINE_PREPARE_DATA_1",
+	[32130] = "MACHINE_PREPARE_DATA_2"
+}
 ----------------------------------------
+local pf_machine1  = ProtoField.new   ("Machine Data 1", "zk8.machine1", ftypes.UINT16, rmachines, base.DEC)
+local pf_machine2  = ProtoField.new   ("Machine Data 2", "zk8.machine2", ftypes.UINT16, rmachines, base.DEC)
+local pf_length    = ProtoField.new   ("Length", "zk8.length", ftypes.UINT32, nil, base.DEC)
+
 local pf_command   = ProtoField.new   ("Command", "zk6.command", ftypes.UINT16, rcomands, base.DEC)
 local pf_checksum  = ProtoField.new   ("CheckSum", "zk6.checksum", ftypes.UINT16, nil, base.HEX)
 local pf_sesion_id = ProtoField.uint16("zk6.session_id", "ID session", base.HEX)
 local pf_reply_id  = ProtoField.uint16("zk6.reply_id", "ID Reply")
+local pf_commkey   = ProtoField.new   ("Communication key", "zk6.commkey", ftypes.UINT32, nil, base.HEX)
 local pf_data      = ProtoField.new   ("Data", "zk6.data", ftypes.BYTES, nil, base.DOT)
+local pf_string    = ProtoField.new   ("Data", "zk6.string", ftypes.STRING)
 local pf_time      = ProtoField.new   ("Time", "zk6.time", ftypes.UINT32, nil)
-
+local pf_start     = ProtoField.new   ("Data offset", "zk6.start", ftypes.UINT32, nil)
+local pf_size      = ProtoField.new   ("Data Size", "zk6.size", ftypes.UINT32, nil)
+local pf_psize     = ProtoField.new   ("Packet Size", "zk6.psize", ftypes.UINT32, nil)
+local pf_fsize0    = ProtoField.new   ("null #1", "zk6.fsize0", ftypes.UINT32, nil)
+local pf_fsize1    = ProtoField.new   ("null #2", "zk6.fsize1", ftypes.UINT32, nil)
+local pf_fsize2    = ProtoField.new   ("null #3", "zk6.fsize2", ftypes.UINT32, nil)
+local pf_fsize3    = ProtoField.new   ("null #4", "zk6.fsize3", ftypes.UINT32, nil)
+local pf_fsizeu    = ProtoField.new   ("users", "zk6.fsizeu", ftypes.UINT32, nil)
+local pf_fsize4    = ProtoField.new   ("null #5", "zk6.fsize4", ftypes.UINT32, nil)
+local pf_fsizef    = ProtoField.new   ("fingers", "zk6.fsizef", ftypes.UINT32, nil)
+local pf_fsize5    = ProtoField.new   ("null #6", "zk6.fsize5", ftypes.UINT32, nil)
+local pf_fsizer    = ProtoField.new   ("records", "zk6.fsizer", ftypes.UINT32, nil)
+local pf_fsize6    = ProtoField.new   ("null #7", "zk6.fsize6", ftypes.UINT32, nil)
+local pf_fsize7    = ProtoField.new   ("null 4096", "zk6.fsize7", ftypes.UINT32, nil)
+local pf_fsize8    = ProtoField.new   ("null #8", "zk6.fsize8", ftypes.UINT32, nil)
+local pf_fsizec    = ProtoField.new   ("cards", "zk6.fsizec", ftypes.UINT32, nil)
+local pf_fsize9    = ProtoField.new   ("null #9", "zk6.fsize9", ftypes.UINT32, nil)
+local pf_fsizefc   = ProtoField.new   ("finger capacity", "zk6.fsizefc", ftypes.UINT32, nil)
+local pf_fsizeuc   = ProtoField.new   ("user capacity", "zk6.fsizeuc", ftypes.UINT32, nil)
+local pf_fsizerc   = ProtoField.new   ("record capacity", "zk6.fsizerc", ftypes.UINT32, nil)
+local pf_fsizefa   = ProtoField.new   ("finger available", "zk6.fsizefa", ftypes.UINT32, nil)
+local pf_fsizeua   = ProtoField.new   ("user available", "zk6.fsizeua", ftypes.UINT32, nil)
+local pf_fsizera   = ProtoField.new   ("record available", "zk6.fsizera", ftypes.UINT32, nil)
+local pf_fsizeff   = ProtoField.new   ("face", "zk6.fsizerff", ftypes.UINT32, nil)
+local pf_fsize10   = ProtoField.new   ("nul #10", "zk6.fsize10", ftypes.UINT32, nil)
+local pf_fsizeffc  = ProtoField.new   ("face capacity", "zk6.fsizeffc", ftypes.UINT32, nil)
+local pf_pbfill    = ProtoField.new   ("null 01", "zk6.pbfill", ftypes.UINT8, nil)
+local pf_pbcmd     = ProtoField.new   ("command", "zk6.pbcmd", ftypes.UINT16, rcomands)
+local pf_pbarg     = ProtoField.new   ("argument", "zk6.pbarg", ftypes.UINT64, rfct)
+local pf_pbfill0   = ProtoField.new   ("null 0", "zk6.pbfill0", ftypes.UINT8, nil)
+local pf_pbfree    = ProtoField.new   ("free space", "zk6.pbfree", ftypes.UINT32, nil)
+local pf_uid       = ProtoField.new   ("User ID", "zk6.uid", ftypes.UINT16, nil)
 ----------------------------------------
 -- this actually registers the ProtoFields above, into our new Protocol
 -- in a real script I wouldn't do it this way; I'd build a table of fields programmatically
 -- and then set dns.fields to it, so as to avoid forgetting a field
-zk.fields = { pf_command, pf_checksum, pf_sesion_id, pf_reply_id, pf_data, pf_time}
+zk.fields = { pf_command, pf_checksum, pf_sesion_id, pf_reply_id, pf_commkey, pf_data, pf_string,
+			  pf_time, pf_start, pf_size, pf_psize, pf_fsize0, pf_fsize1, pf_fsize2, pf_fsize3,
+			  pf_fsizeu, pf_fsize4, pf_fsizef, pf_fsize5,pf_fsizer,pf_fsize6,pf_fsize7,
+			  pf_fsize8,pf_fsizec,pf_fsize9,pf_fsizefc,pf_fsizeuc,pf_fsizerc, pf_uid,
+			  pf_fsizefa,pf_fsizeua,pf_fsizera, pf_fsizeff, pf_fsize10, pf_fsizeffc, 
+			  pf_pbfill, pf_pbcmd, pf_pbarg, pf_pbfill0, pf_pbfree}
 
+zk_tcp.fields = { pf_machine1, pf_machine2, pf_length }
 ----------------------------------------
 -- we don't just want to display our protocol's fields, we want to access the value of some of them too!
 -- There are several ways to do that.  One is to just parse the buffer contents in Lua code to find
@@ -226,12 +286,41 @@ zk.fields = { pf_command, pf_checksum, pf_sesion_id, pf_reply_id, pf_data, pf_ti
 -- referencing fields we're creating, and they're not "created" until that line above.
 -- Furthermore, you cannot put these 'Field.new()' lines inside the dissector function.
 -- Before Wireshark version 1.11, you couldn't even do this concept (of using fields you just created).
-local command_field       = Field.new("zk6.command")
-local checksum_field      = Field.new("zk6.checksum")
-local session_id_field     = Field.new("zk6.session_id")
-local reply_id_field        = Field.new("zk6.reply_id")
-local data_field        = Field.new("zk6.data")
-local time_field        =Field.new("zk6.time")
+local machine1_field   = Field.new("zk8.machine1")
+local machine2_field   = Field.new("zk8.machine2")
+local length_field    = Field.new("zk8.length")
+local command_field    = Field.new("zk6.command")
+local checksum_field   = Field.new("zk6.checksum")
+local session_id_field = Field.new("zk6.session_id")
+local reply_id_field   = Field.new("zk6.reply_id")
+local commkey_field    = Field.new("zk6.commkey")
+local data_field       = Field.new("zk6.data")
+local string_field     = Field.new("zk6.string")
+local time_field       = Field.new("zk6.time")
+local size_field       = Field.new("zk6.size")
+local start_field       = Field.new("zk6.start")
+local psize_field      = Field.new("zk6.psize")
+local fsize0_field     = Field.new("zk6.fsize0")
+local fsize1_field     = Field.new("zk6.fsize1")
+local fsize2_field     = Field.new("zk6.fsize2")
+local fsize3_field     = Field.new("zk6.fsize3")
+local fsize4_field     = Field.new("zk6.fsize4")
+local fsize5_field     = Field.new("zk6.fsize5")
+local fsize6_field     = Field.new("zk6.fsize6")
+local fsize7_field     = Field.new("zk6.fsize7")
+local fsize8_field     = Field.new("zk6.fsize8")
+local fsize9_field     = Field.new("zk6.fsize9")
+local fsizef_field     = Field.new("zk6.fsizef")
+local fsizeu_field     = Field.new("zk6.fsizeu")
+local fsizer_field     = Field.new("zk6.fsizer")
+local fsizec_field     = Field.new("zk6.fsizec")
+local pbfill_field     = Field.new("zk6.pbfill")
+local pbcmd_field      = Field.new("zk6.pbcmd")
+local pbarg_field      = Field.new("zk6.pbarg")
+local pbfill0_field    = Field.new("zk6.pbfill0")
+local pbfree_field     = Field.new("zk6.pbfree")
+local uid_field        = Field.new("zk6.uid")
+
 -- here's a little helper function to access the response_field value later.
 -- Like any Field retrieval, you can't retrieve a field's value until its value has been
 -- set, which won't happen until we actually use our ProtoFields in TreeItem:add() calls.
@@ -325,7 +414,7 @@ local prevCommand = 0
 -- The 'tvbuf' is a Tvb object, 'pktinfo' is a Pinfo object, and 'root' is a TreeItem object.
 -- Whenever Wireshark dissects a packet that our Proto is hooked into, it will call
 -- this function and pass it these arguments for the packet it's dissecting.
-function zk.dissector(tvbuf,pktinfo,root)
+function zk.dissector(tvbuf, pktinfo, root)
     dprint2("zk.dissector called")
 
     -- set the protocol column to show our protocol name
@@ -360,27 +449,116 @@ function zk.dissector(tvbuf,pktinfo,root)
     tree:add_le(pf_checksum, tvbuf:range(2,2))
     tree:add_le(pf_sesion_id, tvbuf:range(4,2))
     tree:add_le(pf_reply_id, tvbuf:range(6,2))
+    local command = tvbuf:range(0,2):le_uint()
     if pktlen > ZK_HDR_LEN then
         remain = pktlen - ZK_HDR_LEN -- TODO: no funciona el prevCommand,
-        if (prevCommand == 201) or (prevCommand == 202) then
+		if (command == 1102) then 
+			tree:add_le(pf_commkey, tvbuf:range(8,4))
+        elseif (command == 1500) then
+            tree:add_le(pf_size, tvbuf:range(8,4))
+			if remain > 8 then
+				tree:add_le(pf_psize, tvbuf:range(12,4))
+			end
+		elseif (command == 12) or (command == 11) then
+			tree:add(pf_string, tvbuf:range(8,remain))
+		elseif (command == 18) then
+			tree:add_le(pf_uid, tvbuf(8,2))
+		elseif (command == 1503) then
+			tree:add(pf_pbfill, tvbuf:range(8,1))
+			tree:add_le(pf_pbcmd, tvbuf:range(9,2))
+			tree:add_le(pf_pbarg, tvbuf:range(11,8))
+		elseif (command == 1504) then
+			tree:add_le(pf_start, tvbuf:range(8,4))
+            tree:add_le(pf_size, tvbuf:range(12,4))
+		elseif (prevCommand == 1503) then
+            tree:add_le(pf_pbfill0, tvbuf:range(8,1))
+			tree:add_le(pf_size, tvbuf:range(9,4))
+            tree:add_le(pf_psize, tvbuf:range(13,4))
+			tree:add_le(pf_pbfree, tvbuf:range(17,4))
+		elseif (prevCommand == 12) or (prevCommand == 11) or (prevCommand == 1100) then
+			tree:add(pf_string, tvbuf:range(8,remain))
+        elseif (prevCommand == 201) or (prevCommand == 202) then
             local ts = tvbuf:range(8,4):le_uint()
-            tree:add_le(pf_time, tvbuf:range(8,4)) 
+            tree:add_le(pf_time, tvbuf:range(8,4))
+		elseif (prevCommand == 50) then
+			tree:add_le(pf_fsize0, tvbuf:range(8,4))
+			tree:add_le(pf_fsize1, tvbuf:range(12,4))
+			tree:add_le(pf_fsize2, tvbuf:range(16,4))
+			tree:add_le(pf_fsize3, tvbuf:range(20,4))
+			tree:add_le(pf_fsizeu, tvbuf:range(24,4))
+			tree:add_le(pf_fsize4, tvbuf:range(28,4))
+			tree:add_le(pf_fsizef, tvbuf:range(32,4))
+			tree:add_le(pf_fsize5, tvbuf:range(36,4))
+			tree:add_le(pf_fsizer, tvbuf:range(40,4))
+			tree:add_le(pf_fsize6, tvbuf:range(44,4))
+			tree:add_le(pf_fsize7, tvbuf:range(48,4))
+			tree:add_le(pf_fsize8, tvbuf:range(52,4))
+			tree:add_le(pf_fsizec, tvbuf:range(56,4))
+			tree:add_le(pf_fsize9, tvbuf:range(60,4))
+			tree:add_le(pf_fsizefc, tvbuf:range(64,4))
+			tree:add_le(pf_fsizeuc, tvbuf:range(68,4))
+			tree:add_le(pf_fsizerc, tvbuf:range(72,4))
+			tree:add_le(pf_fsizefa, tvbuf:range(76,4))
+			tree:add_le(pf_fsizeua, tvbuf:range(80,4))
+			tree:add_le(pf_fsizera, tvbuf:range(84,4))
+			if remain > 80 then
+			tree:add_le(pf_fsizeff, tvbuf:range(88,4))
+			tree:add_le(pf_fsize10, tvbuf:range(92,4))
+			tree:add_le(pf_fsizeffc, tvbuf:range(96,4))
+			end
         else
-            tree:add_le(pf_data, tvbuf:range(8,remain))
+            -- tree:add_le(pf_data, tvbuf:range(8,remain)) most time we need strings
+			tree:add(pf_string, tvbuf:range(8,remain))
         end
     end
     dprint2("zk.dissector returning",pktlen)
-    prevCommand = tvbuf:range(0,2):le_uint()
+    prevCommand = command
     -- tell wireshark how much of tvbuff we dissected
     return pktlen
 end
-
 ----------------------------------------
 -- we want to have our protocol dissection invoked for a specific UDP port,
 -- so get the udp dissector table and add our protocol to it
 DissectorTable.get("udp.port"):add(default_settings.port, zk)
 
 
+function zk_tcp.dissector(tvbuf, pktinfo, root)
+    dprint2("zk_tcp.dissector called")
+	local pktlen = tvbuf:reported_length_remaining()
+
+    -- We start by adding our protocol to the dissection display tree.
+    -- A call to tree:add() returns the child created, so we can add more "under" it using that return value.
+    -- The second argument is how much of the buffer/packet this added tree item covers/represents - in this
+    -- case (DNS protocol) that's the remainder of the packet.
+    local tree = root:add(zk_tcp, tvbuf:range(0,pktlen))
+
+    -- now let's check it's not too short
+    if pktlen < ZK_HDR_LEN then
+        -- since we're going to add this protocol to a specific UDP port, we're going to
+        -- assume packets in this port are our protocol, so the packet being too short is an error
+        -- the old way: tree:add_expert_info(PI_MALFORMED, PI_ERROR, "packet too short")
+        -- the correct way now:
+        tree:add_proto_expert_info(ef_too_short)
+        dprint("packet length",pktlen,"too short")
+        return
+    end
+    dprint2("zk_tcp.dissector returning", pktlen)
+    tree:add_le(pf_machine1, tvbuf:range(0,2))
+    tree:add_le(pf_machine2, tvbuf:range(2,2))
+    tree:add_le(pf_length, tvbuf:range(4,4))
+    -- tell wireshark how much of tvbuff we dissected
+    if pktlen > ZK_HDR_LEN then
+        remain = pktlen - ZK_HDR_LEN
+		-- zk_tree  = tree:add(zk, tvbuf:range(8, remain))
+		zk.dissector(tvbuf:range(8,remain):tvb(), pktinfo, tree)
+	end
+	-- set the protocol column to show our protocol name
+    pktinfo.cols.protocol:set("ZK8")
+    return pktlen
+end
+
+
+DissectorTable.get("tcp.port"):add(default_settings.port, zk_tcp)
 -- We're done!
 -- our protocol (Proto) gets automatically registered after this script finishes loading
 ----------------------------------------
