@@ -402,6 +402,36 @@ class ZK(object):
         else:
             raise ZKErrorResponse("can't read device name")
 
+    def get_face_version(self):
+        '''
+        return the face version
+        '''
+        command = const.CMD_OPTIONS_RRQ
+        command_string = 'ZKFaceVersion'
+        response_size = 1024
+
+        cmd_response = self.__send_command(command, command_string, response_size)
+        if cmd_response.get('status'):
+            response = self.__data_recv[8:].split('=')[-1].split('\x00')[0]
+            return response
+        else:
+            return None
+
+    def get_fp_version(self):
+        '''
+        return the fingerprint version
+        '''
+        command = const.CMD_OPTIONS_RRQ
+        command_string = '~ZKFPVersion'
+        response_size = 1024
+
+        cmd_response = self.__send_command(command, command_string, response_size)
+        if cmd_response.get('status'):
+            response = self.__data_recv[8:].split('=')[-1].split('\x00')[0]
+            return response
+        else:
+            return None
+
     def get_extend_fmt(self):
         '''
         determine extend fmt
@@ -418,6 +448,67 @@ class ZK(object):
         else:
             raise ZKErrorResponse("can't read extend fmt")
 
+    def get_user_extend_fmt(self):
+        '''
+        determine extend fmt
+        '''
+        command = const.CMD_OPTIONS_RRQ
+        command_string = '~UserExtFmt'
+        response_size = 1024
+
+        cmd_response = self.__send_command(command, command_string, response_size)
+        if cmd_response.get('status'):
+            fmt = int(self.__data_recv[8:].split('=')[-1].split('\x00')[0])
+            #definitivo? seleccionar firmware aqui?
+            return fmt
+        else:
+            return None
+
+    def get_face_fun_on(self):
+        '''
+        determine extend fmt
+        '''
+        command = const.CMD_OPTIONS_RRQ
+        command_string = 'FaceFunOn'
+        response_size = 1024
+
+        cmd_response = self.__send_command(command, command_string, response_size)
+        if cmd_response.get('status'):
+            response = int(self.__data_recv[8:].split('=')[-1].split('\x00')[0])
+            #definitivo? seleccionar firmware aqui?
+            return response
+        else:
+            return None
+
+    def get_compat_old_firmware(self):
+        '''
+        determine extend fmt
+        '''
+        command = const.CMD_OPTIONS_RRQ
+        command_string = 'CompatOldFirmware'
+        response_size = 1024
+
+        cmd_response = self.__send_command(command, command_string, response_size)
+        if cmd_response.get('status'):
+            response = int(self.__data_recv[8:].split('=')[-1].split('\x00')[0])
+            #definitivo? seleccionar firmware aqui?
+            return response
+        else:
+            return None
+    def get_network_params(self):
+        ip = self.__address[0]
+        mask = ''
+        gate = ''
+        cmd_response = self.__send_command(const.CMD_OPTIONS_RRQ, 'IPAddress', 1024)
+        if cmd_response.get('status'):
+            ip = int(self.__data_recv[8:].split('=')[-1].split('\x00')[0])
+        cmd_response = self.__send_command(const.CMD_OPTIONS_RRQ, 'NetMask', 1024)
+        if cmd_response.get('status'):
+            mask = int(self.__data_recv[8:].split('=')[-1].split('\x00')[0])
+        cmd_response = self.__send_command(const.CMD_OPTIONS_RRQ, 'GATEIPAddress', 1024)
+        if cmd_response.get('status'):
+            gate = int(self.__data_recv[8:].split('=')[-1].split('\x00')[0])
+        return {'ip': ip, 'mask': mask, 'gateway': gate}
     def get_pin_width(self):
         '''
         return the serial number
@@ -1092,8 +1183,6 @@ class ZK(object):
             while len(attendance_data) >= 8:
                 uid, status, timestamp = unpack('HH4s', attendance_data.ljust(8)[:8])
                 attendance_data = attendance_data[8:]
-                if uid == 0: #(on zk  it's 16 bytes, extrauid 0, status 255, timestamp 0x0)
-                    continue # probably
                 user_id = str(uid) #TODO revisar posibles valores cruzar con userdata
                 timestamp = self.__decode_time(timestamp)
                 attendance = Attendance(uid, user_id, timestamp, status)
@@ -1102,8 +1191,6 @@ class ZK(object):
             while len(attendance_data) >= 16:
                 uid, timestamp, status, verified, reserved, workcode = unpack('<I4sBB2sI', attendance_data.ljust(16)[:16])
                 attendance_data = attendance_data[16:]
-                if uid == 0: #(on zk  it's 16 bytes, extrauid 0, status 255, timestamp 0x0)
-                    continue # probably
                 user_id = str(uid) #TODO revisar posibles valores cruzar con userdata
                 timestamp = self.__decode_time(timestamp)
                 attendance = Attendance(uid, user_id, timestamp, status)

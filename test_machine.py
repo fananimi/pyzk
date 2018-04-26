@@ -67,6 +67,10 @@ try:
     print 'Serial Number    : %s' % conn.get_serialnumber()
     print 'MAC: %s' % conn.get_mac()
     print ''
+    print '--- sizes & capacity ---'
+    conn.read_sizes()
+    print conn
+    print ''
     print '--- Get User ---'
     users = conn.get_users()
     max_uid = 0
