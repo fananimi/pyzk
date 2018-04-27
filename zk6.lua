@@ -512,6 +512,11 @@ function zk.dissector(tvbuf, pktinfo, root)
         end
     end
     dprint2("zk.dissector returning",pktlen)
+    if rcomands[command] ~= nil then
+        pktinfo.cols.info:set(rcomands[command])
+    else
+        pktinfo.cols.info:set("CMD:" .. tostring(command))
+    end
     prevCommand = command
     -- tell wireshark how much of tvbuff we dissected
     return pktlen

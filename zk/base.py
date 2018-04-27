@@ -442,9 +442,9 @@ class ZK(object):
 
         cmd_response = self.__send_command(command, command_string, response_size)
         if cmd_response.get('status'):
-            fmt = int(self.__data_recv[8:].split('=')[-1].split('\x00')[0])
+            fmt = (self.__data_recv[8:].split('=')[-1].split('\x00')[0])
             #definitivo? seleccionar firmware aqui?
-            return fmt
+            return int(fmt)
         else:
             raise ZKErrorResponse("can't read extend fmt")
 
@@ -458,9 +458,9 @@ class ZK(object):
 
         cmd_response = self.__send_command(command, command_string, response_size)
         if cmd_response.get('status'):
-            fmt = int(self.__data_recv[8:].split('=')[-1].split('\x00')[0])
+            fmt = (self.__data_recv[8:].split('=')[-1].split('\x00')[0])
             #definitivo? seleccionar firmware aqui?
-            return fmt
+            return (fmt)
         else:
             return None
 
@@ -474,9 +474,9 @@ class ZK(object):
 
         cmd_response = self.__send_command(command, command_string, response_size)
         if cmd_response.get('status'):
-            response = int(self.__data_recv[8:].split('=')[-1].split('\x00')[0])
+            response = (self.__data_recv[8:].split('=')[-1].split('\x00')[0])
             #definitivo? seleccionar firmware aqui?
-            return response
+            return (response)
         else:
             return None
 
@@ -490,25 +490,27 @@ class ZK(object):
 
         cmd_response = self.__send_command(command, command_string, response_size)
         if cmd_response.get('status'):
-            response = int(self.__data_recv[8:].split('=')[-1].split('\x00')[0])
+            response = (self.__data_recv[8:].split('=')[-1].split('\x00')[0])
             #definitivo? seleccionar firmware aqui?
             return response
         else:
             return None
+
     def get_network_params(self):
         ip = self.__address[0]
         mask = ''
         gate = ''
         cmd_response = self.__send_command(const.CMD_OPTIONS_RRQ, 'IPAddress', 1024)
         if cmd_response.get('status'):
-            ip = int(self.__data_recv[8:].split('=')[-1].split('\x00')[0])
+            ip = (self.__data_recv[8:].split('=')[-1].split('\x00')[0])
         cmd_response = self.__send_command(const.CMD_OPTIONS_RRQ, 'NetMask', 1024)
         if cmd_response.get('status'):
-            mask = int(self.__data_recv[8:].split('=')[-1].split('\x00')[0])
+            mask = (self.__data_recv[8:].split('=')[-1].split('\x00')[0])
         cmd_response = self.__send_command(const.CMD_OPTIONS_RRQ, 'GATEIPAddress', 1024)
         if cmd_response.get('status'):
-            gate = int(self.__data_recv[8:].split('=')[-1].split('\x00')[0])
+            gate = (self.__data_recv[8:].split('=')[-1].split('\x00')[0])
         return {'ip': ip, 'mask': mask, 'gateway': gate}
+
     def get_pin_width(self):
         '''
         return the serial number
@@ -964,7 +966,8 @@ class ZK(object):
         command_string = "SDKBuild=1"
         cmd_response = self.__send_command(command, command_string)
         if not cmd_response.get('status'):
-            raise ZKErrorResponse("can't set sdk build ")
+            return False #raise ZKErrorResponse("can't set sdk build ")
+        return True
     def enroll_user(self, uid=0, temp_id=0, user_id=''):
         '''
         start enroll user

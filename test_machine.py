@@ -47,10 +47,19 @@ zk = ZK(args.address, port=args.port, timeout=args.timeout, password=args.passwo
 try:
     print 'Connecting to device ...'
     conn = zk.connect()
+    print 'SDK build=1      :', conn.set_sdk_build_1() # why?
     print 'Disabling device ...'
     conn.disable_device()
     fmt = conn.get_extend_fmt()
     print 'ExtendFmt        : {}'.format(fmt)
+    fmt = conn.get_user_extend_fmt()
+    print 'UsrExtFmt        : {}'.format(fmt)
+    print 'Face FunOn       : {}'.format(conn.get_face_fun_on())
+    print 'Face Version     : {}'.format(conn.get_face_version())
+    print 'Finger Version   : {}'.format(conn.get_fp_version())
+    print 'Old Firm compat  : {}'.format(conn.get_compat_old_firmware())
+    net = conn.get_network_params()
+    print 'IP:{} mask:{} gateway:{}'.format(net['ip'],net['mask'], net['gateway'])
     now = datetime.datetime.today().replace(microsecond=0)
     if args.updatetime:
         print '--- Updating Time---'
@@ -59,7 +68,7 @@ try:
     dif = abs(zk_time - now).total_seconds()
     print 'Time             : {}'.format(zk_time)
     if dif > 120:
-        print("WRN: TIME IS NOT SYNC!!!!!! (local: %s)" % now)
+        print("WRN: TIME IS NOT SYNC!!!!!! (local: %s) use command -u to update" % now)
     print 'Firmware Version : {}'.format(conn.get_firmware_version())
     print 'Platform         : %s' % conn.get_platform()
     print 'DeviceName       : %s' % conn.get_device_name()
