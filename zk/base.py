@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import sys
+#from builtins import str
 from datetime import datetime
 from socket import AF_INET, SOCK_DGRAM, SOCK_STREAM, socket
 from struct import pack, unpack
@@ -110,6 +111,7 @@ class ZK(object):
         self.__session_id = 0
         self.__reply_id = const.USHRT_MAX-1
         self.__data_recv = None
+        self.__data = None
     def __create_socket(self):
         """ based on self.tcp"""
         if self.tcp:
@@ -167,7 +169,7 @@ class ZK(object):
 
         return pack('H', checksum)
 
-    def __send_command(self, command, command_string='', response_size=8):
+    def __send_command(self, command, command_string=b'', response_size=8):
         '''
         send command to the terminal
         '''
@@ -186,12 +188,12 @@ class ZK(object):
                 self.__sock.sendto(buf, self.__address)
                 self.__data_recv = self.__sock.recv(response_size)
                 self.__header = unpack('HHHH', self.__data_recv[:8])
-        except Exception, e:
+        except Exception as e:
             raise ZKNetworkError(str(e))
 
         self.__response = self.__header[0]
         self.__reply_id = self.__header[3]
-
+        self.__data = self.__data_recv[8:] #could be empty
         if self.__response in [const.CMD_ACK_OK, const.CMD_PREPARE_DATA, const.CMD_DATA]:
             return {
                 'status': True,
@@ -203,14 +205,14 @@ class ZK(object):
         }
     def __ack_ok(self):
         """ event ack ok """
-        buf = self.__create_header(const.CMD_ACK_OK, "", self.__session_id, const.USHRT_MAX - 1)
+        buf = self.__create_header(const.CMD_ACK_OK, b'', self.__session_id, const.USHRT_MAX - 1)
         try:
             if self.tcp:
                 top = self.__create_tcp_top(buf)
                 self.__sock.send(top)
             else:
                 self.__sock.sendto(buf, self.__address)
-        except Exception, e:
+        except Exception as e:
             raise ZKNetworkError(str(e))
 
 
@@ -221,7 +223,7 @@ class ZK(object):
         Returns the amount of bytes that are going to be sent"""
         response = self.__response
         if response == const.CMD_PREPARE_DATA:
-            size = unpack('I', self.__data_recv[8:12])[0]
+            size = unpack('I', self.__data[:4])[0]
             return size
         else:
             return 0
@@ -236,23 +238,26 @@ class ZK(object):
         """Decode a timestamp retrieved from the timeclock
 
         copied from zkemsdk.c - DecodeTime"""
+        """
         t = t.encode('hex')
         t = int(self.__reverse_hex(t), 16)
-        #print "decode from  %s "% format(t, '04x')
+        #print ("decode from  %s "% format(t, '04x'))
+        """
+        t = unpack("<I", t)[0]
         second = t % 60
-        t = t / 60
+        t = t // 60
 
         minute = t % 60
-        t = t / 60
+        t = t // 60
 
         hour = t % 24
-        t = t / 24
+        t = t // 24
 
         day = t % 31 + 1
-        t = t / 31
+        t = t // 31
 
         month = t % 12 + 1
-        t = t / 12
+        t = t // 12
 
         year = t + 2000
 
@@ -286,17 +291,17 @@ class ZK(object):
         cmd_response = self.__send_command(const.CMD_CONNECT)
         self.__session_id = self.__header[2]
         if cmd_response.get('code') == const.CMD_ACK_UNAUTH:
-            #print "try auth"
+            #print ("try auth")
             command_string = make_commkey(self.__password, self.__session_id)
             cmd_response = self.__send_command(const.CMD_AUTH, command_string)
         if cmd_response.get('status'):
             self.is_connect = True
-            # set the session iduid, privilege, password, name, card, group_id, timezone, user_id = unpack('HB5s8s5sBhI',userdata.ljust(28)[:28])
+            # set the session id
             return self
         else:
             if cmd_response["code"] == const.CMD_ACK_UNAUTH:
                 raise ZKErrorResponse("Unauthenticated")    
-            print "connect err response {} ".format(cmd_response["code"])
+            print ("connect err response {} ".format(cmd_response["code"]))
             raise ZKErrorResponse("Invalid response: Can't connect")
 
     def disconnect(self):
@@ -336,10 +341,10 @@ class ZK(object):
         '''
         return the firmware version
         '''
-        cmd_response = self.__send_command(const.CMD_GET_VERSION,'', 1024)
+        cmd_response = self.__send_command(const.CMD_GET_VERSION,b'', 1024)
         if cmd_response.get('status'):
-            firmware_version = self.__data_recv[8:].split('\x00')[0]
-            return firmware_version
+            firmware_version = self.__data.split(b'\x00')[0]
+            return firmware_version.decode()
         else:
             raise ZKErrorResponse("Can't read frimware version")
 
@@ -348,12 +353,12 @@ class ZK(object):
         return the serial number
         '''
         command = const.CMD_OPTIONS_RRQ
-        command_string = '~SerialNumber'
+        command_string = b'~SerialNumber'
         response_size = 1024
         cmd_response = self.__send_command(command, command_string, response_size)
         if cmd_response.get('status'):
-            serialnumber = self.__data_recv[8:].split('=')[-1].split('\x00')[0]
-            return serialnumber
+            serialnumber = self.__data.split(b'=')[-1].split(b'\x00')[0]
+            return serialnumber.decode() # string?
         else:
             raise ZKErrorResponse("can't read serial number")
 
@@ -362,13 +367,13 @@ class ZK(object):
         return the serial number
         '''
         command = const.CMD_OPTIONS_RRQ
-        command_string = '~Platform'
+        command_string = b'~Platform'
         response_size = 1024
 
         cmd_response = self.__send_command(command, command_string, response_size)
         if cmd_response.get('status'):
-            platform = self.__data_recv[8:].split('=')[-1].split('\x00')[0]
-            return platform
+            platform = self.__data.split(b'=')[-1].split(b'\x00')[0]
+            return platform.decode()
         else:
             raise ZKErrorResponse("can't get platform")
 
@@ -377,13 +382,13 @@ class ZK(object):
         return the serial number
         '''
         command = const.CMD_OPTIONS_RRQ
-        command_string = 'MAC'
+        command_string = b'MAC'
         response_size = 1024
 
         cmd_response = self.__send_command(command, command_string, response_size)
         if cmd_response.get('status'):
-            mac = self.__data_recv[8:].split('=')[-1].split('\x00')[0]
-            return mac
+            mac = self.__data.split(b'=')[-1].split(b'\x00')[0]
+            return mac.decode()
         else:
             raise ZKErrorResponse("can't get mac")
 
@@ -392,13 +397,13 @@ class ZK(object):
         return the serial number
         '''
         command = const.CMD_OPTIONS_RRQ
-        command_string = '~DeviceName'
+        command_string = b'~DeviceName'
         response_size = 1024
 
         cmd_response = self.__send_command(command, command_string, response_size)
         if cmd_response.get('status'):
-            device = self.__data_recv[8:].split('=')[-1].split('\x00')[0]
-            return device
+            device = self.__data.split(b'=')[-1].split(b'\x00')[0]
+            return device.decode()
         else:
             raise ZKErrorResponse("can't read device name")
 
@@ -407,13 +412,13 @@ class ZK(object):
         return the face version
         '''
         command = const.CMD_OPTIONS_RRQ
-        command_string = 'ZKFaceVersion'
+        command_string = b'ZKFaceVersion'
         response_size = 1024
 
         cmd_response = self.__send_command(command, command_string, response_size)
         if cmd_response.get('status'):
-            response = self.__data_recv[8:].split('=')[-1].split('\x00')[0]
-            return response
+            response = self.__data.split(b'=')[-1].split(b'\x00')[0]
+            return int(response)  if response else 0
         else:
             return None
 
@@ -422,13 +427,13 @@ class ZK(object):
         return the fingerprint version
         '''
         command = const.CMD_OPTIONS_RRQ
-        command_string = '~ZKFPVersion'
+        command_string = b'~ZKFPVersion'
         response_size = 1024
 
         cmd_response = self.__send_command(command, command_string, response_size)
         if cmd_response.get('status'):
-            response = self.__data_recv[8:].split('=')[-1].split('\x00')[0]
-            return response
+            response = self.__data.split(b'=')[-1].split(b'\x00')[0]
+            return int(response) if response else 0
         else:
             return None
 
@@ -437,14 +442,14 @@ class ZK(object):
         determine extend fmt
         '''
         command = const.CMD_OPTIONS_RRQ
-        command_string = '~ExtendFmt'
+        command_string = b'~ExtendFmt'
         response_size = 1024
 
         cmd_response = self.__send_command(command, command_string, response_size)
         if cmd_response.get('status'):
-            fmt = (self.__data_recv[8:].split('=')[-1].split('\x00')[0])
+            fmt = (self.__data.split(b'=')[-1].split(b'\x00')[0])
             #definitivo? seleccionar firmware aqui?
-            return int(fmt)
+            return int(fmt) if fmt else 0
         else:
             raise ZKErrorResponse("can't read extend fmt")
 
@@ -453,14 +458,14 @@ class ZK(object):
         determine extend fmt
         '''
         command = const.CMD_OPTIONS_RRQ
-        command_string = '~UserExtFmt'
+        command_string = b'~UserExtFmt'
         response_size = 1024
 
         cmd_response = self.__send_command(command, command_string, response_size)
         if cmd_response.get('status'):
-            fmt = (self.__data_recv[8:].split('=')[-1].split('\x00')[0])
+            fmt = (self.__data.split(b'=')[-1].split(b'\x00')[0])
             #definitivo? seleccionar firmware aqui?
-            return (fmt)
+            return int(fmt) if fmt else 0
         else:
             return None
 
@@ -469,14 +474,14 @@ class ZK(object):
         determine extend fmt
         '''
         command = const.CMD_OPTIONS_RRQ
-        command_string = 'FaceFunOn'
+        command_string = b'FaceFunOn'
         response_size = 1024
 
         cmd_response = self.__send_command(command, command_string, response_size)
         if cmd_response.get('status'):
-            response = (self.__data_recv[8:].split('=')[-1].split('\x00')[0])
+            response = (self.__data.split(b'=')[-1].split(b'\x00')[0])
             #definitivo? seleccionar firmware aqui?
-            return (response)
+            return int(response) if response else 0
         else:
             return None
 
@@ -485,43 +490,43 @@ class ZK(object):
         determine extend fmt
         '''
         command = const.CMD_OPTIONS_RRQ
-        command_string = 'CompatOldFirmware'
+        command_string = b'CompatOldFirmware'
         response_size = 1024
 
         cmd_response = self.__send_command(command, command_string, response_size)
         if cmd_response.get('status'):
-            response = (self.__data_recv[8:].split('=')[-1].split('\x00')[0])
+            response = (self.__data.split(b'=')[-1].split(b'\x00')[0])
             #definitivo? seleccionar firmware aqui?
-            return response
+            return int(response) if response else 0
         else:
             return None
 
     def get_network_params(self):
         ip = self.__address[0]
-        mask = ''
-        gate = ''
-        cmd_response = self.__send_command(const.CMD_OPTIONS_RRQ, 'IPAddress', 1024)
+        mask = b''
+        gate = b''
+        cmd_response = self.__send_command(const.CMD_OPTIONS_RRQ, b'IPAddress', 1024)
         if cmd_response.get('status'):
-            ip = (self.__data_recv[8:].split('=')[-1].split('\x00')[0])
-        cmd_response = self.__send_command(const.CMD_OPTIONS_RRQ, 'NetMask', 1024)
+            ip = (self.__data.split(b'=')[-1].split(b'\x00')[0])
+        cmd_response = self.__send_command(const.CMD_OPTIONS_RRQ, b'NetMask', 1024)
         if cmd_response.get('status'):
-            mask = (self.__data_recv[8:].split('=')[-1].split('\x00')[0])
-        cmd_response = self.__send_command(const.CMD_OPTIONS_RRQ, 'GATEIPAddress', 1024)
+            mask = (self.__data.split(b'=')[-1].split(b'\x00')[0])
+        cmd_response = self.__send_command(const.CMD_OPTIONS_RRQ, b'GATEIPAddress', 1024)
         if cmd_response.get('status'):
-            gate = (self.__data_recv[8:].split('=')[-1].split('\x00')[0])
-        return {'ip': ip, 'mask': mask, 'gateway': gate}
+            gate = (self.__data.split(b'=')[-1].split(b'\x00')[0])
+        return {'ip': ip.decode(), 'mask': mask.decode(), 'gateway': gate.decode()}
 
     def get_pin_width(self):
         '''
         return the serial number
         '''
         command = const.CMD_GET_PINWIDTH
-        command_string = ' P'
+        command_string = b' P'
         response_size = 9
 
         cmd_response = self.__send_command(command, command_string, response_size)
         if cmd_response.get('status'):
-            width = self.__data_recv[8:].split('\x00')[0]
+            width = self.__data.split(b'\x00')[0]
             return bytearray(width)[0]
         else:
             raise ZKErrorResponse("can0t get pin width")
@@ -540,13 +545,13 @@ class ZK(object):
         command = const.CMD_GET_FREE_SIZES
         response_size = 1024
 
-        cmd_response = self.__send_command(command,'', response_size)
+        cmd_response = self.__send_command(command,b'', response_size)
         if cmd_response.get('status'):
-            size = len(self.__data_recv[8:]) 
+            size = len(self.__data) 
             if size == 80:
-                fields = unpack('iiiiiiiiiiiiiiiiiiii', self.__data_recv[8:])
+                fields = unpack('iiiiiiiiiiiiiiiiiiii', self.__data)
             else: #92?
-                fields = unpack('iiiiiiiiiiiiiiiiiiiiiii', self.__data_recv[8:])
+                fields = unpack('iiiiiiiiiiiiiiiiiiiiiii', self.__data)
             self.users = fields[4]
             self.fingers = fields[6]
             self.records = fields[8]
@@ -590,9 +595,9 @@ class ZK(object):
         """obtener la hora del equipo"""
         command = const.CMD_GET_TIME
         response_size = 1032
-        cmd_response = self.__send_command(command, '', response_size)
+        cmd_response = self.__send_command(command, b'', response_size)
         if cmd_response.get('status'):
-            return self.__decode_time(self.__data_recv[8:12])
+            return self.__decode_time(self.__data[:4])
         else:
             raise ZKErrorResponse("can't get time")
 
@@ -611,7 +616,7 @@ class ZK(object):
         shutdown the device
         '''
         command = const.CMD_POWEROFF
-        command_string = ''
+        command_string = b''
         response_size = 1032
         cmd_response = self.__send_command(command, command_string, response_size)
         if cmd_response.get('status'):
@@ -724,15 +729,15 @@ class ZK(object):
             if not group_id:
                 group_id = 0
             try:
-                command_string = pack('HB5s8s5sBHI', uid, privilege, str(password), str(name), chr(0), int(group_id), 0, int(user_id))
-            except Exception, e:
-                print "s_h Error pack: %s" % e
-                print "Error pack: %s" % sys.exc_info()[0]
+                command_string = pack('HB5s8sIxBHI', uid, privilege, password.encode(), name.encode(), card, int(group_id), 0, int(user_id))
+            except Exception as e:
+                print("s_h Error pack: %s" % e)
+                print("Error pack: %s" % sys.exc_info()[0])
                 raise ZKErrorResponse("Cant pack user")
         else:
-            name_pad = name.ljust(24, '\x00')[:24]
+            name_pad = name.ljust(24, b'\x00')[:24]
             card_str = pack('i', int(card))[:4]
-            command_string = pack('HB8s24s4sc7sx24s', uid, privilege, password, name_pad, card_str, chr(0), group_id, str(user_id))
+            command_string = pack('HB8s24s4sx7sx24s', uid, privilege, password.encode(), name_pad, card_str, group_id.encode(), user_id.encode())
         response_size = 1024 #TODO check response?
         cmd_response = self.__send_command(command, command_string, response_size)
         if not cmd_response.get('status'):
@@ -780,7 +785,7 @@ class ZK(object):
         if not cmd_response.get('status'):
             raise ZKErrorResponse("Cant prepare data")
         remain = size % MAX_CHUNK
-        packets = (size - remain) / MAX_CHUNK
+        packets = (size - remain) // MAX_CHUNK
         start = 0
         for _wlk in range(packets):
             self.__send_chunk(buffer[start:start+MAX_CHUNK])
@@ -847,7 +852,7 @@ class ZK(object):
             while True: #limitado por respuesta no por tamaño
                 data_recv = self.__sock.recv(1032)
                 response = unpack('HHHH', data_recv[:8])[0]
-                #print "# %s packet response is: %s" % (pac, response)
+                #print("# %s packet response is: %s" % (pac, response))
                 if response == const.CMD_DATA:
                     data.append(data_recv[8:]) #header turncated
                     bytes -= 1024
@@ -855,10 +860,10 @@ class ZK(object):
                     break #without problem.
                 else:
                     #truncado! continuar?
-                    #print "broken!"
+                    #print("broken!")
                     break
-                #print "still needs %s" % bytes
-        data = ''.join(data)
+                #print("still needs %s" % bytes)
+        data = b''.join(data)
         #uid 32 fing 03, starts with 4d-9b-53-53-32-31
         return Finger(size, uid, temp_id, 1, data)
 
@@ -867,7 +872,7 @@ class ZK(object):
         templates = []
         templatedata, size = self.read_with_buffer(const.CMD_DB_RRQ, const.FCT_FINGERTMP)
         if size < 4:
-            print "WRN: no user data" # debug
+            print("WRN: no user data") # debug
             return []
         total_size = unpack('i', templatedata[0:4])[0]
         templatedata = templatedata[4:] #total size not used
@@ -876,7 +881,7 @@ class ZK(object):
             size, uid, fid, valid = unpack('HHbb',templatedata[:6])
             template = unpack("%is" % (size-6), templatedata[6:size])[0]
             finger = Finger(size, uid, fid, valid, template)
-            #print finger # test
+            #print(finger) # test
             templates.append(finger)
             templatedata = templatedata[size:]
             total_size -= size
@@ -889,21 +894,21 @@ class ZK(object):
             return []
         users = []
         userdata, size = self.read_with_buffer(const.CMD_USERTEMP_RRQ, const.FCT_USER)
-        #print "user size %i" % size
+        #print("user size %i" % size)
         if size <= 4:
-            print "WRN: no user data" # debug
+            print("WRN: no user data")# debug
             return []
         total_size = unpack("I",userdata[:4])[0]
         self.user_packet_size = total_size / self.users
         if not self.user_packet_size in [28, 72]:
-            print "WRN packet size would be ", self.user_packet_size
+            print("WRN packet size would be  %i" % self.user_packet_size)
         userdata = userdata[4:]
         if self.user_packet_size == 28:
             while len(userdata) >= 28:
-                uid, privilege, password, name, card, group_id, timezone, user_id = unpack('HB5s8s5sBhI',userdata.ljust(28)[:28])
-                password = unicode(password.split('\x00')[0], errors='ignore')
-                name = unicode(name.split('\x00')[0], errors='ignore').strip()
-                card = unpack('Q', card.ljust(8,'\x00'))[0] #or hex value?
+                uid, privilege, password, name, card, group_id, timezone, user_id = unpack('<HB5s8sIxBhI',userdata.ljust(28, b'\x00')[:28])
+                password = (password.split(b'\x00')[0]).decode(errors='ignore')
+                name = (name.split(b'\x00')[0]).decode(errors='ignore').strip()
+                #card = unpack('I', card)[0] #or hex value?
                 group_id = str(group_id)
                 user_id = str(user_id)
                 #TODO: check card value and find in ver8                                
@@ -911,20 +916,20 @@ class ZK(object):
                     name = "NN-%s" % user_id
                 user = User(uid, name, privilege, password, group_id, user_id, card)
                 users.append(user)
-                #print "[6]user:",uid, privilege, password, name, card, group_id, timezone, user_id
+                #print("[6]user:",uid, privilege, password, name, card, group_id, timezone, user_id)
                 userdata = userdata[28:]
         else:
             while len(userdata) >= 72:
-                uid, privilege, password, name, separator, group_id, user_id = unpack('Hc8s24s4sx7sx24s', userdata.ljust(72)[:72])
+                uid, privilege, password, name, card, group_id, user_id = unpack('<HB8s24sIx7sx24s', userdata.ljust(72, b'\x00')[:72])
                 #u1 = int(uid[0].encode("hex"), 16)
                 #u2 = int(uid[1].encode("hex"), 16)
                 #uid = u1 + (u2 * 256)
-                privilege = int(privilege.encode("hex"), 16)
-                password = unicode(password.split('\x00')[0], errors='ignore')
-                name = unicode(name.split('\x00')[0], errors='ignore').strip()
-                group_id = unicode(group_id.split('\x00')[0], errors='ignore').strip()
-                user_id = unicode(user_id.split('\x00')[0], errors='ignore')
-                card = int(unpack('I', separator)[0])
+                #privilege = int(privilege.encode("hex"), 16)
+                password = (password.split(b'\x00')[0]).decode(errors='ignore')
+                name = (name.split(b'\x00')[0]).decode(errors='ignore').strip()
+                group_id = (group_id.split(b'\x00')[0]).decode(errors='ignore').strip()
+                user_id = (user_id.split(b'\x00')[0]).decode(errors='ignore')
+                #card = int(unpack('I', separator)[0])
                 if not name:
                     name = "NN-%s" % user_id
                 user = User(uid, name, privilege, password, group_id, user_id, card)
@@ -963,7 +968,7 @@ class ZK(object):
     def set_sdk_build_1(self):
         """ """
         command = const.CMD_OPTIONS_WRQ
-        command_string = "SDKBuild=1"
+        command_string = b"SDKBuild=1"
         cmd_response = self.__send_command(command, command_string)
         if not cmd_response.get('status'):
             return False #raise ZKErrorResponse("can't set sdk build ")
@@ -994,33 +999,33 @@ class ZK(object):
         self.__sock.settimeout(60)# default 1min for finger
         attempts = 3
         while attempts:
-            print "A:%i esperando primer regevent" % attempts
+            print("A:%i esperando primer regevent" % attempts)
             data_recv = self.__sock.recv(1032) # timeout? tarda bastante...
             self.__ack_ok()
-            print (data_recv).encode('hex')
+            #print((data_recv).encode('hex'))
             if self.tcp:
                 if len(data_recv) > 16: #not empty
-                    res = unpack("H", data_recv.ljust(24,"\x00")[16:18])[0]
-                    print "res", res
+                    res = unpack("H", data_recv.ljust(24,b"\x00")[16:18])[0]
+                    print("res %i" % res)
                     if res == 0 or res == 6 or res == 4:
                         # 6 timeout, 4 mismatch error, 0 can't start(why?)
                         print ("posible timeout  o reg Fallido")
                         break
             else:
                 if len(data_recv) > 8: #not empty
-                    res = unpack("H", data_recv.ljust(16,"\x00")[8:10])[0]
-                    print "res", res
+                    res = unpack("H", data_recv.ljust(16,b"\x00")[8:10])[0]
+                    print("res %i" % res)
                     if res == 6 or res == 4:
                         print ("posible timeout  o reg Fallido")
                         break
-            print "A:%i esperando 2do regevent" % attempts
+            print ("A:%i esperando 2do regevent" % attempts)
             data_recv = self.__sock.recv(1032) # timeout? tarda bastante...
             self.__ack_ok()
-            print (data_recv).encode('hex')
+            #print ((data_recv).encode('hex'))
             if self.tcp:
                 if len(data_recv) > 8: #not empty
-                    res = unpack("H", data_recv.ljust(24,"\x00")[16:18])[0]
-                    print "res", res
+                    res = unpack("H", data_recv.ljust(24,b"\x00")[16:18])[0]
+                    print("res %i" % res)
                     if res == 6 or res == 4:
                         print ("posible timeout  o reg Fallido")
                         break
@@ -1029,8 +1034,8 @@ class ZK(object):
                         attempts -= 1
             else:
                 if len(data_recv) > 8: #not empty
-                    res = unpack("H", data_recv.ljust(16,"\x00")[8:10])[0]
-                    print "res", res
+                    res = unpack("H", data_recv.ljust(16,b"\x00")[8:10])[0]
+                    print("res %i" % res)
                     if res == 6 or res == 4:
                         print ("posible timeout  o reg Fallido")
                         break
@@ -1038,20 +1043,20 @@ class ZK(object):
                         print ("ok, continue?")
                         attempts -= 1
         if attempts == 0:
-            print "esperando 3er regevent"
+            print ("esperando 3er regevent")
             data_recv = self.__sock.recv(1032) # timeout? tarda bastante...
             self.__ack_ok()
-            print (data_recv).encode('hex')
+            #print ((data_recv).encode('hex'))
             if self.tcp:
-                res = unpack("H", data_recv.ljust(24,"\x00")[16:18])[0]
+                res = unpack("H", data_recv.ljust(24,b"\x00")[16:18])[0]
             else:
-                res = unpack("H", data_recv.ljust(16,"\x00")[8:10])[0]
+                res = unpack("H", data_recv.ljust(16,b"\x00")[8:10])[0]
             if res == 6 or res == 4:
                 print ("posible timeout  o reg Fallido")
             if res  == 0:
-                size = unpack("H", data_recv.ljust(16,"\x00")[10:12])[0]
-                pos = unpack("H", data_recv.ljust(16,"\x00")[12:14])[0]
-                print "enroll ok", size, pos
+                size = unpack("H", data_recv.ljust(16,b"\x00")[10:12])[0]
+                pos = unpack("H", data_recv.ljust(16,b"\x00")[12:14])[0]
+                print("enroll ok", size, pos)
                 done = True
         self.__sock.settimeout(self.__timeout)
         self.cancel_capture()
@@ -1081,27 +1086,27 @@ class ZK(object):
         #else
         if cmd_response.get('code') == const.CMD_DATA: # less than 1024!!!
             if self.tcp:
-                return self.__data_recv[16:] #TODO: check size?
+                return self.__data[8:] #TODO: check size?
             else:
-                return self.__data_recv[8:]
+                return self.__data
         if cmd_response.get('code') == const.CMD_PREPARE_DATA:
             data = []
             bytes = self.__get_data_size() #TODO: check with size
-            #print "prepare data size is", bytes
+            #print ("prepare data size is", bytes)
             if self.tcp:
                 data_recv = self.__sock.recv(bytes + 32)
                 recieved = len(data_recv)
                 tcp_length = unpack('HHI', data_recv[:8])[2] #bytes+8
                 if tcp_length < (bytes + 8):
-                    print "request chunk too big!"
+                    print ("request chunk too big!")
                 response = unpack('HHHH', data_recv[8:16])[0]
                 if recieved >= (bytes + 32): #complete
                     if response == const.CMD_DATA:
                         resp = data_recv[16:bytes+16] # no ack?
-                        #print "resp len", len(resp)
+                        #print ("resp len", len(resp))
                         return resp    
                     else:
-                        print "broken packet!!!"
+                        print("broken packet!!!")
                         return '' #broken
                 else: # incomplete
                     data.append(data_recv[16:]) # w/o tcp and header
@@ -1114,16 +1119,16 @@ class ZK(object):
                     data_recv = self.__sock.recv(16)
                     response = unpack('HHHH', data_recv[8:16])[0]
                     if response == const.CMD_ACK_OK:
-                        return ''.join(data)
+                        return b''.join(data)
                 #data_recv[bytes+16:].encode('hex') #included CMD_ACK_OK
-                    print "bad response ", data_recv.encode('hex')
+                    print("bad response %s" % data_recv)
                     #print data
                     return ''
             #else udp
             while True: #limitado por respuesta no por tamaño
                 data_recv = self.__sock.recv(response_size)
                 response = unpack('HHHH', data_recv[:8])[0]
-                #print "# %s packet response is: %s" % (pac, response)
+                #print ("# %s packet response is: %s" % (pac, response))
                 if response == const.CMD_DATA:
                     data.append(data_recv[8:]) #header turncated
                     bytes -= 1024 #UDP
@@ -1131,10 +1136,10 @@ class ZK(object):
                     break #without problem.
                 else:
                     #truncado! continuar?
-                    print "broken!"
+                    print ("broken!")
                     break
-                #print "still needs %s" % bytes
-        return ''.join(data)
+                #print ("still needs %s" % bytes)
+        return b''.join(data)
 
     def read_with_buffer(self, command, fct=0 ,ext=0):
         """ Test read info with buffered command (ZK6: 1503) """
@@ -1143,7 +1148,7 @@ class ZK(object):
         else:
             MAX_CHUNK = 16 * 1024
         command_string = pack('<bhii', 1, command, fct, ext)
-        #print "rwb cs", command_string
+        #print ("rwb cs", command_string)
         response_size = 1024
         data = []
         start = 0
@@ -1152,12 +1157,12 @@ class ZK(object):
             raise ZKErrorResponse("RWB Not supported")
         if cmd_response['code'] == const.CMD_DATA:
             #direct!!! small!!!
-            size = len(self.__data_recv)-8
-            return self.__data_recv[8:], size
-        size = unpack('I', self.__data_recv[9:13])[0]  # extra info???
-        #print "size fill be %i" % size
+            size = len(self.__data)
+            return self.__data, size
+        size = unpack('I', self.__data[1:5])[0]  # extra info???
+        #print ("size fill be %i" % size)
         remain = size % MAX_CHUNK
-        packets = (size-remain) / MAX_CHUNK # should be size /16k
+        packets = (size-remain) // MAX_CHUNK # should be size /16k
         for _wlk in range(packets):
             data.append(self.__read_chunk(start,MAX_CHUNK))
             start += MAX_CHUNK
@@ -1165,8 +1170,8 @@ class ZK(object):
             data.append(self.__read_chunk(start, remain))
             start += remain # Debug
         self.free_data()
-        #print "_read w/chunk %i bytes" % start
-        return ''.join(data), start
+        #print ("_read w/chunk %i bytes" % start)
+        return b''.join(data), start
 
     def get_attendance(self):
         """ return attendance record """
@@ -1176,15 +1181,15 @@ class ZK(object):
         attendances = []
         attendance_data, size = self.read_with_buffer(const.CMD_ATTLOG_RRQ)
         if size < 4:
-            print "WRN: no attendance data" # debug
+            print ("WRN: no attendance data") # debug
             return []
         total_size = unpack("I", attendance_data[:4])[0]
         record_size = total_size/self.records
-        #print "record_size is ", record_size
+        #print ("record_size is ", record_size)
         attendance_data = attendance_data[4:] #total size not used
         if record_size == 8 : #ultra old format
             while len(attendance_data) >= 8:
-                uid, status, timestamp = unpack('HH4s', attendance_data.ljust(8)[:8])
+                uid, status, timestamp = unpack('HH4s', attendance_data.ljust(8, b'\x00')[:8])
                 attendance_data = attendance_data[8:]
                 user_id = str(uid) #TODO revisar posibles valores cruzar con userdata
                 timestamp = self.__decode_time(timestamp)
@@ -1192,7 +1197,7 @@ class ZK(object):
                 attendances.append(attendance)
         elif record_size == 16: # extended
             while len(attendance_data) >= 16:
-                uid, timestamp, status, verified, reserved, workcode = unpack('<I4sBB2sI', attendance_data.ljust(16)[:16])
+                uid, timestamp, status, verified, reserved, workcode = unpack('<I4sBB2sI', attendance_data.ljust(16, b'\x00')[:16])
                 attendance_data = attendance_data[16:]
                 user_id = str(uid) #TODO revisar posibles valores cruzar con userdata
                 timestamp = self.__decode_time(timestamp)
@@ -1200,10 +1205,10 @@ class ZK(object):
                 attendances.append(attendance)
         else:
             while len(attendance_data) >= 40:
-                uid, user_id, sparator, timestamp, status, space = unpack('H24sc4sc8s', attendance_data.ljust(40)[:40])
-                user_id = user_id.split('\x00')[0]
+                uid, user_id, sparator, timestamp, status, space = unpack('<H24sc4sB8s', attendance_data.ljust(40, b'\x00')[:40])
+                user_id = user_id.split(b'\x00')[0]
                 timestamp = self.__decode_time(timestamp)
-                status = int(status.encode("hex"), 16)
+                #status = int(status.encode("hex"), 16)
 
                 attendance = Attendance(uid, user_id, timestamp, status)
                 attendances.append(attendance)

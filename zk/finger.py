@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from struct import pack #, unpack
+import codecs
 class Finger(object):
     def __init__(self, size, uid, fid, valid, template):
         self.size = size # template only
@@ -7,7 +8,8 @@ class Finger(object):
         self.fid = fid
         self.valid = valid
         self.template = template
-        self.mark = str(template[:6]).encode("hex")
+        #self.mark = str().encode("hex")
+        self.mark = codecs.encode(template[:6], 'hex')
     def repack(self): #full
         return pack("HHbb%is" % (self.size), self.size+6, self.uid, self.fid, self.valid, self.template)
 
