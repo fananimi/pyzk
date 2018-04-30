@@ -17,7 +17,7 @@ class Finger(object):
         return pack("H%is" % (self.size), self.size+2, self.template)
 
     def __str__(self):
-        return "<Finger> [u:%i, fid:%i, size:%i v:%i t:%s...]" %  (self.uid, self.fid, self.size, self.valid, self.mark)
+        return "<Finger> [uid:%i, fid:%i, size:%i v:%i t:%s...]" %  (self.uid, self.fid, self.size, self.valid, self.mark)
 
     def __repr__(self):
-        return "<Finger> [u:%i, fid:%i, size:%i v:%i t:%s...]" %  (self.uid, self.fid, self.size, self.valid, self.mark) #.encode('hex')
+        return "<Finger> [uid:%i, fid:%i, size:%i v:%i t:%s...]" %  (self.uid, self.fid, self.size, self.valid, self.mark) #.encode('hex')

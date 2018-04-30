@@ -45,6 +45,7 @@ def make_commkey(key, session_id, ticks=50):
         B,
         k[3] ^ B)
     return k
+
 class ZK_helper(object):
     """ helper class """
     def __init__(self, ip, port=4370):
@@ -55,6 +56,7 @@ class ZK_helper(object):
         #self.password = password # passint
         #self.firmware = int(firmware) #TODO check minor version?
         #self.tcp = tcp
+
     def test_ping(self):
         """
         Returns True if host responds to a ping request
@@ -70,15 +72,18 @@ class ZK_helper(object):
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE,
                             shell=need_sh) == 0
+
     def test_tcp(self):
         self.client = socket(AF_INET, SOCK_STREAM)
         self.client.settimeout(10) # fixed test
         res = self.client.connect_ex(self.address)
         self.client.close()
         return res
+
     def test_udp(self):
         self.client = socket(AF_INET, SOCK_DGRAM)
         self.client.settimeout(10) # fixed test
+
 class ZK(object):
     """ Clase ZK """
     def __init__(self, ip, port=4370, timeout=60, password=0, force_udp=False, ommit_ping=False):
@@ -112,6 +117,7 @@ class ZK(object):
         self.__reply_id = const.USHRT_MAX-1
         self.__data_recv = None
         self.__data = None
+
     def __create_socket(self):
         """ based on self.tcp"""
         if self.tcp:
@@ -119,13 +125,13 @@ class ZK(object):
             self.__sock.connect_ex(self.__address)
         else:
             self.__sock = socket(AF_INET, SOCK_DGRAM)
-        
-        
+
     def __create_tcp_top(self, packet):
         """ witch the complete packet set top header """
         length = len(packet)
         top = pack('<HHI', const.MACHINE_PREPARE_DATA_1, const.MACHINE_PREPARE_DATA_2, length)
         return top + packet
+
     def __create_header(self, command, command_string, session_id, reply_id):
         '''
         Puts a the parts that make up a packet together and packs them into a byte string
@@ -203,6 +209,7 @@ class ZK(object):
             'status': False,
             'code': self.__response
         }
+
     def __ack_ok(self):
         """ event ack ok """
         buf = self.__create_header(const.CMD_ACK_OK, b'', self.__session_id, const.USHRT_MAX - 1)
@@ -214,7 +221,6 @@ class ZK(object):
                 self.__sock.sendto(buf, self.__address)
         except Exception as e:
             raise ZKNetworkError(str(e))
-
 
     def __get_data_size(self):
         """Checks a returned packet to see if it returned CMD_PREPARE_DATA,
@@ -748,8 +754,16 @@ class ZK(object):
         """ save user and template """
         #TODO: grabado global
         # armar paquete de huellas
+        if not isinstance(user, User):
+            #try uid
+            users = self.get_users()
+            users = filter(lambda x: x.uid==user, users)
+            if len(users) == 1:
+                user = users[0]
+            else:
+                raise ZKErrorResponse("Cant find user")
         if isinstance(fingers, Finger):
-            fingers =[Finger]
+            fingers = [fingers]
         fpack = ""
         table = ""
         fnum = 0x10 # possibly flag
@@ -836,7 +850,7 @@ class ZK(object):
             raise ZKErrorResponse("can't delete user")
         self.refresh_data()
 
-    def get_user_template(self, uid, temp_id):
+    def get_user_template(self, uid, temp_id=0):
         """ ZKFinger VX10.0 """
         command = 88 # comando secreto!!!
         command_string = pack('hb', uid, temp_id)
@@ -987,9 +1001,17 @@ class ZK(object):
                 if len(users) == 1:
                     user_id = users[0].user_id
                 else: #double? posibly empty
-                    return False #can't enrool
+                    return False #can't enroll
             command_string = pack('<24sbb',str(user_id), temp_id, 1) # el 1 es misterio
         else:
+            if not uid:
+                #we need uid
+                users = self.get_users()
+                users = filter(lambda x: x.user_id==user_id, users)
+                if len(users) >= 1:
+                    uid = users[0].uid #only one
+                else: # posibly empty
+                    return False #can't enroll
             command_string = pack('hhb', int(uid), 0, temp_id) # el 0 es misterio
         self.cancel_capture()
         cmd_response = self.__send_command(command, command_string)

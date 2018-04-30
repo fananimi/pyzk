@@ -20,4 +20,4 @@ class User(object):
         return '<User>: [uid:{}, name:{} user_id:{}]'.format(self.uid, self.name, self.user_id)
 
     def __repr__(self):
-        return '<User>: {}'.format(self.name)
+        return '<User>: [uid:{}, name:{} user_id:{}]'.format(self.uid, self.name, self.user_id)
