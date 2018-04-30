@@ -19,5 +19,6 @@ setup(
         'biometrics',
         'security'
     ],
+    install_requires=['future'],
     zip_safe=False
 )

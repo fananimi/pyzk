@@ -1,5 +1,22 @@
 Changelog
 =========
+Version 0.9
+-----------
+* Initial Python 3 Support
+* major changes
+
+Version 0.8
+-----------
+* test suite tool (test_machine.py)
+* Initial TCP support
+
+Version 0.7
+-----------
+* internal major changes
+
+Version 0.6
+-----------
+* device password support
 
 Version 0.5
 -----------
