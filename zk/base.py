@@ -2,7 +2,7 @@
 import sys
 #from builtins import str
 from datetime import datetime
-from socket import AF_INET, SOCK_DGRAM, SOCK_STREAM, socket
+from socket import AF_INET, SOCK_DGRAM, SOCK_STREAM, socket, timeout
 from struct import pack, unpack
 
 from zk import const
@@ -89,6 +89,7 @@ class ZK(object):
     def __init__(self, ip, port=4370, timeout=60, password=0, force_udp=False, ommit_ping=False):
         """ initialize instance """
         self.is_connect = False
+        self.is_enabled = True #let's asume
         self.helper = ZK_helper(ip, port)
         self.__address = (ip, port)
         self.__sock = socket(AF_INET, SOCK_DGRAM)
@@ -186,7 +187,7 @@ class ZK(object):
                 top = self.__create_tcp_top(buf)
                 self.__sock.send(top)
                 self.__tcp_data_recv = self.__sock.recv(response_size + 8)
-                self.__tcp_header = unpack('HHI', self.__tcp_data_recv[:8])
+                self.__tcp_header = unpack('<HHI', self.__tcp_data_recv[:8])
                 self.__tcp_length = self.__tcp_header[2]
                 self.__header = unpack('HHHH', self.__tcp_data_recv[8:16])
                 self.__data_recv = self.__tcp_data_recv[8:] # dirty hack
@@ -270,7 +271,12 @@ class ZK(object):
         d = datetime(year, month, day, hour, minute, second)
 
         return d
-
+    def __decode_timehex(self, timehex):
+        """timehex string of six bytes"""
+        year, month, day, hour, minute, second = unpack("BBBBBB", timehex)
+        year += 2000
+        d = datetime(year, month, day, hour, minute, second)
+        return d
     def __encode_time(self, t):
         """Encode a timestamp so that it can be read on the timeclock
         """
@@ -329,6 +335,7 @@ class ZK(object):
         '''
         cmd_response = self.__send_command(const.CMD_DISABLEDEVICE)
         if cmd_response.get('status'):
+            self.is_enabled = False
             return True
         else:
             raise ZKErrorResponse("Can't Disable")
@@ -339,6 +346,7 @@ class ZK(object):
         '''
         cmd_response = self.__send_command(const.CMD_ENABLEDEVICE)
         if cmd_response.get('status'):
+            self.is_enabled = True
             return True
         else:
             raise ZKErrorResponse("Can't enable device")
@@ -987,32 +995,26 @@ class ZK(object):
         if not cmd_response.get('status'):
             return False #raise ZKErrorResponse("can't set sdk build ")
         return True
+
     def enroll_user(self, uid=0, temp_id=0, user_id=''):
         '''
         start enroll user
+        we need user_id (uid2)
         '''
         command = const.CMD_STARTENROLL
         done = False
+        if  not user_id:
+            #we need user_id (uid2)
+            users = self.get_users()
+            users = filter(lambda x: x.uid==uid, users)
+            if len(users) >= 1:
+                user_id = users[0].user_id
+            else: #double? posibly empty
+                return False #can't enroll
         if self.tcp:
-            if  not user_id:
-                #we need user_id (uid2)
-                users = self.get_users()
-                users = filter(lambda x: x.uid==uid, users)
-                if len(users) == 1:
-                    user_id = users[0].user_id
-                else: #double? posibly empty
-                    return False #can't enroll
             command_string = pack('<24sbb',str(user_id), temp_id, 1) # el 1 es misterio
         else:
-            if not uid:
-                #we need uid
-                users = self.get_users()
-                users = filter(lambda x: x.user_id==user_id, users)
-                if len(users) >= 1:
-                    uid = users[0].uid #only one
-                else: # posibly empty
-                    return False #can't enroll
-            command_string = pack('hhb', int(uid), 0, temp_id) # el 0 es misterio
+            command_string = pack('<Ib', int(user_id), temp_id) #
         self.cancel_capture()
         cmd_response = self.__send_command(command, command_string)
         if not cmd_response.get('status'):
@@ -1073,6 +1075,9 @@ class ZK(object):
                 res = unpack("H", data_recv.ljust(24,b"\x00")[16:18])[0]
             else:
                 res = unpack("H", data_recv.ljust(16,b"\x00")[8:10])[0]
+            print("res %i" % res)
+            if res == 5:
+                print ("huella duplicada")
             if res == 6 or res == 4:
                 print ("posible timeout  o reg Fallido")
             if res  == 0:
@@ -1084,6 +1089,73 @@ class ZK(object):
         self.cancel_capture()
         self.verify_user()
         return done
+
+    def live_capture(self, new_timeout=10):# generator!
+        """ try live capture of events"""
+        was_enabled = self.is_enabled
+        users = self.get_users()
+        self.cancel_capture()
+        self.verify_user()
+        if not self.is_enabled:
+            self.enable_device()
+        self.reg_event(const.EF_ATTLOG) #0xFFFF
+        self.__sock.settimeout(new_timeout) # default 1 minute test?
+        self.end_live_capture = False
+        while not self.end_live_capture:
+            try:
+                print ("esperando event")
+                data_recv = self.__sock.recv(1032)
+                self.__ack_ok()
+                if self.tcp:
+                    size = unpack('<HHI', data_recv[:8])[2]
+                    header = unpack('HHHH', data_recv[8:16])
+                    data = data_recv[16:]
+                else:
+                    size = len(data_recv)
+                    header = unpack('HHHH', data_recv[:8])
+                    data = data_recv[8:]
+                if not header[0] == const.CMD_REG_EVENT:
+                    print("not event!")
+                    continue # or raise error?
+                if not len(data):
+                    print ("empty")
+                    continue
+                """if len (data) == 5:
+                    
+                    continue"""
+                if len(data) == 12: #class 1 attendance
+                    user_id, status, match, timehex = unpack('<IBB6s', data)
+                    timestamp = self.__decode_timehex(timehex)
+                    tuser = filter(lambda x: int(x.user_id) == user_id, users)
+                    if not tuser:
+                        uid = user_id
+                    else:
+                        uid = tuser[0].uid
+                    yield Attendance(uid, user_id, timestamp, status)
+                elif len(data) == 36: #class 2 attendance
+                    user_id,  status, match, timehex, res = unpack('<24sBB6sI', data)
+                    user_id = (user_id.split(b'\x00')[0]).decode(errors='ignore')
+                    timestamp = self.__decode_timehex(timehex)
+                    tuser = filter(lambda x: int(x.user_id) == int(user_id), users)
+                    if not tuser:
+                        uid = int(user_id)
+                    else:
+                        uid = tuser[0].uid
+                    yield Attendance(uid, user_id, timestamp, status)
+                else:
+                    print ((data).encode('hex')), len(data)
+                    yield data
+            except timeout:
+                print ("time out")
+                yield None # return to keep watching
+            except (KeyboardInterrupt, SystemExit):
+                print ("break")
+                break
+        print ("exit gracefully")
+        self.reg_event(0) # TODO: test
+        if not was_enabled:
+            self.disable_device()
+
     def clear_data(self, clear_type=5): # FCT_USER
         '''
         clear all data (include: user, attendance report, finger database )
@@ -1200,6 +1272,8 @@ class ZK(object):
         self.read_sizes()
         if self.records == 0: #lazy
             return []
+        users = self.get_users()
+        #print users
         attendances = []
         attendance_data, size = self.read_with_buffer(const.CMD_ATTLOG_RRQ)
         if size < 4:
@@ -1212,23 +1286,41 @@ class ZK(object):
         if record_size == 8 : #ultra old format
             while len(attendance_data) >= 8:
                 uid, status, timestamp = unpack('HH4s', attendance_data.ljust(8, b'\x00')[:8])
+                #print attendance_data[:8].encode('hex')
                 attendance_data = attendance_data[8:]
-                user_id = str(uid) #TODO revisar posibles valores cruzar con userdata
+                tuser = filter(lambda x: x.uid == uid, users)
+                if not tuser: 
+                    user_id = str(uid) #TODO revisar pq
+                else:
+                    user_id = tuser[0].user_id
                 timestamp = self.__decode_time(timestamp)
                 attendance = Attendance(uid, user_id, timestamp, status)
                 attendances.append(attendance)
         elif record_size == 16: # extended
             while len(attendance_data) >= 16:
-                uid, timestamp, status, verified, reserved, workcode = unpack('<I4sBB2sI', attendance_data.ljust(16, b'\x00')[:16])
+                user_id, timestamp, status, verified, reserved, workcode = unpack('<I4sBB2sI', attendance_data.ljust(16, b'\x00')[:16])
+                #print attendance_data[:16].encode('hex')
                 attendance_data = attendance_data[16:]
-                user_id = str(uid) #TODO revisar posibles valores cruzar con userdata
+                tuser = filter(lambda x: int(x.user_id) == int(user_id), users)
+                if not tuser: 
+                    #print("no uid {}", user_id)
+                    uid = str(user_id)
+                    tuser = filter(lambda x: x.uid == user_id, users) # refix
+                    if not tuser:
+                        uid = str(user_id) #TODO revisar pq
+                    else:
+                        uid = tuser[0].uid
+                        user_id = tuser[0].user_id
+                else:
+                    uid = tuser[0].uid
                 timestamp = self.__decode_time(timestamp)
                 attendance = Attendance(uid, user_id, timestamp, status)
                 attendances.append(attendance)
         else:
             while len(attendance_data) >= 40:
                 uid, user_id, sparator, timestamp, status, space = unpack('<H24sc4sB8s', attendance_data.ljust(40, b'\x00')[:40])
-                user_id = user_id.split(b'\x00')[0]
+                #print attendance_data[:40].encode('hex')
+                user_id = (user_id.split(b'\x00')[0]).decode(errors='ignore')
                 timestamp = self.__decode_time(timestamp)
                 #status = int(status.encode("hex"), 16)
 

@@ -35,10 +35,14 @@ parser.add_argument('-r', '--records', action="store_true",
                     help='get records')
 parser.add_argument('-u', '--updatetime', action="store_true",
                     help='Update Date / Time')
+parser.add_argument('-l', '--live-capture', action="store_true",
+                    help='Live Event Capture')
 parser.add_argument('-D', '--deleteuser', type=int,
-                    help='Delete a User', default=0)
+                    help='Delete a User (uid)', default=0)
 parser.add_argument('-A', '--adduser', type=int,
-                    help='Add a User', default=0)
+                    help='Add a User (uid)', default=0)
+parser.add_argument('-E', '--enrolluser', type=int,
+                    help='Enroll a User (uid)', default=0)
 parser.add_argument('-F', '--finger', type=int,
                     help='Finger for register', default=0)
 
@@ -137,15 +141,23 @@ try:
             conn.delete_user(uid) #borrado previo
         try:
             conn.set_user(uid, name, privilege, password, '', user_id, card)
+            args.enrolluser = uid
         except ZKErrorResponse as e:
             print ("error: %s" % e)
             #try new format
             zk_user = User(uid, name, privilege, password, '', user_id, card)
-            conn.save_user_template(zk_user)
+            conn.save_user_template(zk_user)# forced creation
+            args.enrolluser = uid
+        conn.refresh_data()
+    if args.enrolluser:
+        uid = int(args.enrolluser)
+        print ('--- Enrolling User #{} ---'.format(uid))
         conn.delete_user_template(uid, args.finger)
         conn.reg_event(0xFFFF) #
         if conn.enroll_user(uid, args.finger):
             conn.test_voice(18) # register ok
+            tem = conn.get_user_template(uid, args.finger)
+            print (tem)
         else:
             conn.test_voice(23) # not registered
         conn.refresh_data()
@@ -162,11 +174,25 @@ try:
         i = 0
         for att in attendance:
             i +=1
-            print ("ATT {:>6}: uid:{:>3}, t: {}".format(i, att.uid, att.timestamp))
+            print ("ATT {:>6}: uid:{:>3}, user_id:{:>8} t: {}, s:{}".format(i, att.uid, att.user_id, att.timestamp, att.status))
     print ('')
     print ('--- sizes & capacity ---')
     conn.read_sizes()
     print (conn)
+    if args.live_capture:
+        print ('')
+        print ('--- Live Capture! (press ctrl+C to break)---') #TODO how?
+        counter = 0
+        for att in conn.live_capture():
+            if att is None:
+                #counter += 1 
+                print ("timeout {}".format(counter))
+            else:
+                print ("ATT {:>6}: uid:{:>3}, user_id:{:>8} t: {}, s:{}".format(counter, att.uid, att.user_id, att.timestamp, att.status))
+            if counter >= 10:
+                conn.end_live_capture = True
+        print('')
+        print('--- capture End!---')
     print ('')
 except Exception as e:
     print ("Process terminate : {}".format(e))
@@ -179,4 +205,5 @@ finally:
         print ('Enabling device ...')
         conn.enable_device()
         conn.disconnect()
+        print ('ok bye!')
         print ('')
