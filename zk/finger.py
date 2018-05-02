@@ -2,8 +2,8 @@
 from struct import pack #, unpack
 import codecs
 class Finger(object):
-    def __init__(self, size, uid, fid, valid, template):
-        self.size = size # template only
+    def __init__(self, uid, fid, valid, template):
+        self.size = len(template) # template only
         self.uid = uid
         self.fid = fid
         self.valid = valid
