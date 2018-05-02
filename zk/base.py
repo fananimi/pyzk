@@ -663,10 +663,10 @@ class ZK(object):
          7 memoria de alm fich llena /-
          8 huella duplicada / huella duplicada
          9 acceso denegado / ya ha sido registrado
-         10 *beep* / beep
-         11 el sistema vuelve al modo de verificacion / beep
+         10 *beep* / beep kuko
+         11 el sistema vuelve al modo de verificacion / beep siren
          12 por favor coloque su dedo  o acerque tarjeta  /-
-         13 acerca su tarjeta de nuevo  /beep
+         13 acerca su tarjeta de nuevo  /beep bell
          14 excedido tiempo p esta operacion  /-
          15 coloque su dedo de nuevo  /-
          16 coloque su dedo por ultima vez  /-

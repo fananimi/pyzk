@@ -16,28 +16,28 @@ parser.add_argument('-T', '--timeout', type=int,
                     help='timeout [60]', default=60)
 parser.add_argument('-P', '--password', type=int,
                     help='Device code/password', default=0)
-parser.add_argument('-f', '--firmware', type=int,
-                    help='test firmware', default=8)
+parser.add_argument('-f', '--force-udp', action="store_true",
+                    help='Force UDP communication')
 
 args = parser.parse_args()
 
 
 conn = None
-zk = ZK(args.address, port=args.port, timeout=args.timeout, password=args.password, firmware=args.firmware)
+zk = ZK(args.address, port=args.port, timeout=args.timeout, password=args.password, force_udp=args.force_udp)
 try:
-    print 'Connecting to device ...'
+    print ('Connecting to device ...')
     conn = zk.connect()
-    print 'Disabling device ...'
+    print ('Disabling device ...')
     conn.disable_device()
-    print 'Firmware Version: : {}'.format(conn.get_firmware_version())
+    print ('Firmware Version: : {}'.format(conn.get_firmware_version()))
     for i in range(0,65):
-        print "test_voice, %i" % i
+        print ("test_voice, %i" % i)
         zk.test_voice(i)
         sleep(3)
-    print 'Enabling device ...'
+    print ('Enabling device ...')
     conn.enable_device()
-except Exception, e:
-    print "Process terminate : {}".format(e)
+except Exception as e:
+    print ("Process terminate : {}".format(e))
 finally:
     if conn:
         conn.disconnect()
