@@ -17,17 +17,17 @@ Complete documentation can be found at [Readthedocs](http://pyzk.readthedocs.io/
 Just create a ZK object and you will ready to call api.
 
 * Basic Usage
-```
+```python
 from zk import ZK, const
 
 conn = None
-zk = ZK('192.168.1.10', port=4370, timeout=5)
+zk = ZK('192.168.1.201', port=4370, timeout=5)
 try:
-    print 'Connecting to device ...'
+    print ('Connecting to device ...')
     conn = zk.connect()
-    print 'Disabling device ...'
+    print ('Disabling device ...')
     conn.disable_device()
-    print 'Firmware Version: : {}'.format(conn.get_firmware_version())
+    print ('Firmware Version: : {}'.format(conn.get_firmware_version()))
     # print '--- Get User ---'
     users = conn.get_users()
     for user in users:
@@ -35,19 +35,19 @@ try:
         if user.privilege == const.USER_ADMIN:
             privilege = 'Admin'
 
-        print '- UID #{}'.format(user.uid)
-        print '  Name       : {}'.format(user.name)
-        print '  Privilege  : {}'.format(privilege)
-        print '  Password   : {}'.format(user.password)
-        print '  Group ID   : {}'.format(user.group_id)
-        print '  User  ID   : {}'.format(user.user_id)
+        print ('- UID #{}'.format(user.uid))
+        print ('  Name       : {}'.format(user.name))
+        print ('  Privilege  : {}'.format(privilege))
+        print ('  Password   : {}'.format(user.password))
+        print ('  Group ID   : {}'.format(user.group_id))
+        print ('  User  ID   : {}'.format(user.user_id))
 
-    print "Voice Test ..."
+    print ("Voice Test ...")
     conn.test_voice()
-    print 'Enabling device ...'
+    print ('Enabling device ...')
     conn.enable_device()
-except Exception, e:
-    print "Process terminate : {}".format(e)
+except Exception as e:
+    print ("Process terminate : {}".format(e))
 finally:
     if conn:
         conn.disconnect()
@@ -100,7 +100,7 @@ conn.get_pin_width()
 
 * Get Device use and free Space
 
-```
+```python
 conn.read_sizes()
 print(conn)
 #also:
@@ -114,7 +114,7 @@ conn.records_cap
 
 * User Operation
 
-```
+```python
 # Create user
 conn.set_user(uid=1, name='Fanani M. Ihsan', privilege=const.USER_ADMIN, password='12345678', group_id='', user_id='123', card=0)
 # Get all users (will return list of User object)
@@ -122,12 +122,12 @@ users = conn.get_users()
 # Delete User
 conn.delete_user(uid=1)
 ```
-there is also an enroll_user() (but it doesn't work with some tcp ZK8 devices)
+there is also an `enroll_user()` (but it doesn't work with some tcp ZK8 devices)
 
 
 * Fingerprints
 
-```
+```python
 # Get  a single Fingerprint (will return a Finger object)
 template = conn.get_user_template(uid=1, temp_id=0) #temp_id is the finger to read 0~9
 # Get all fingers from DB (will return a list of Finger objects)
@@ -141,7 +141,7 @@ conn.save_user_template(user, [fing1 ,fing2])
 
 
 * Attendance Record
-```
+```python
 # Get attendances (will return list of Attendance object)
 attendances = conn.get_attendance()
 # Clear attendances record
@@ -150,13 +150,13 @@ conn.clear_attendance()
 
 * Test voice
 
-```
+```python
 conn.test_voice(index=10) # beep or chirp
 ```
 
 * Device Maintenance
 
-```
+```python
 # shutdown connected device
 conn.power_off()
 # restart connected device
@@ -164,6 +164,43 @@ conn.restart()
 # clear buffer
 conn.free_data()
 ```
+
+Test Machine
+
+```sh
+usage: ./test_machine.py [-h] [-a ADDRESS] [-p PORT] [-T TIMEOUT] [-P PASSWORD]
+                         [-f] [-t] [-r] [-u] [-l] [-D DELETEUSER] [-A ADDUSER]
+                         [-E ENROLLUSER] [-F FINGER]
+
+ZK Basic Reading Tests
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -a ADDRESS, --address ADDRESS
+                        ZK device Address [192.168.1.201]
+  -p PORT, --port PORT  ZK device port [4370]
+  -T TIMEOUT, --timeout TIMEOUT
+                        Default [10] seconds (0: disable timeout)
+  -P PASSWORD, --password PASSWORD
+                        Device code/password
+  -f, --force-udp       Force UDP communication
+  -t, --templates       Get templates / fingers
+  -r, --records         Get attendance records
+  -u, --updatetime      Update Date/Time
+  -l, --live-capture    Live Event Capture
+  -D DELETEUSER, --deleteuser DELETEUSER
+                        Delete a User (uid)
+  -A ADDUSER, --adduser ADDUSER
+                        Add a User (uid) (and enroll)
+  -E ENROLLUSER, --enrolluser ENROLLUSER
+                        Enroll a User (uid)
+  -F FINGER, --finger FINGER
+                        Finger for enroll (fid=0)
+
+
+```
+
+
 
 # Related Project
 

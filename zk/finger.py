@@ -9,15 +9,19 @@ class Finger(object):
         self.valid = valid
         self.template = template
         #self.mark = str().encode("hex")
-        self.mark = codecs.encode(template[:6], 'hex')
+        self.mark = codecs.encode(template[:8], 'hex') + b'...' + codecs.encode(template[-8:], 'hex')
+
     def repack(self): #full
         return pack("HHbb%is" % (self.size), self.size+6, self.uid, self.fid, self.valid, self.template)
 
     def repack_only(self): #only template
         return pack("H%is" % (self.size), self.size+2, self.template)
-
+    
+    def __eq__(self, other): 
+        return self.__dict__ == other.__dict__
+    
     def __str__(self):
-        return "<Finger> [uid:%i, fid:%i, size:%i v:%i t:%s...]" %  (self.uid, self.fid, self.size, self.valid, self.mark)
+        return "<Finger> [uid:{:>3}, fid:{}, size:{:>4} v:{} t:{}]".format(self.uid, self.fid, self.size, self.valid, self.mark)
 
     def __repr__(self):
-        return "<Finger> [uid:%i, fid:%i, size:%i v:%i t:%s...]" %  (self.uid, self.fid, self.size, self.valid, self.mark) #.encode('hex')
+        return "<Finger> [uid:{:>3}, fid:{}, size:{:>4} v:{} t:{}]".format(self.uid, self.fid, self.size, self.valid, self.mark)

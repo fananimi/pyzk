@@ -3,10 +3,11 @@
 import sys
 import argparse
 
+sys.path.append("zk")
+
 from time import sleep
 from zk import ZK, const
 
-sys.path.append("zk")
 parser = argparse.ArgumentParser(description='ZK Basic Reading Tests')
 parser.add_argument('-a', '--address', 
                     help='ZK device Addres [192.168.1.201]', default='192.168.1.201')
@@ -18,12 +19,13 @@ parser.add_argument('-P', '--password', type=int,
                     help='Device code/password', default=0)
 parser.add_argument('-f', '--force-udp', action="store_true",
                     help='Force UDP communication')
-
+parser.add_argument('-v', '--verbose', action="store_true",
+                    help='Print debug information')
 args = parser.parse_args()
 
 
 conn = None
-zk = ZK(args.address, port=args.port, timeout=args.timeout, password=args.password, force_udp=args.force_udp)
+zk = ZK(args.address, port=args.port, timeout=args.timeout, password=args.password, force_udp=args.force_udp, verbose=args.verbose)
 try:
     print ('Connecting to device ...')
     conn = zk.connect()

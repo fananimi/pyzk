@@ -80,7 +80,7 @@ class ZK_helper(object):
         self.client.close()
         return res
 
-    def test_udp(self):
+    def test_udp(self): # WIP:
         self.client = socket(AF_INET, SOCK_DGRAM)
         self.client.settimeout(10) # fixed test
 
@@ -470,7 +470,7 @@ class ZK(object):
 
     def get_user_extend_fmt(self):
         '''
-        determine extend fmt
+        determine user extend fmt
         '''
         command = const.CMD_OPTIONS_RRQ
         command_string = b'~UserExtFmt'
@@ -502,7 +502,7 @@ class ZK(object):
 
     def get_compat_old_firmware(self):
         '''
-        determine extend fmt
+        determine old firmware
         '''
         command = const.CMD_OPTIONS_RRQ
         command_string = b'CompatOldFirmware'
@@ -538,7 +538,6 @@ class ZK(object):
         command = const.CMD_GET_PINWIDTH
         command_string = b' P'
         response_size = 9
-
         cmd_response = self.__send_command(command, command_string, response_size)
         if cmd_response.get('status'):
             width = self.__data.split(b'\x00')[0]
@@ -559,7 +558,6 @@ class ZK(object):
         """ read sizes """
         command = const.CMD_GET_FREE_SIZES
         response_size = 1024
-
         cmd_response = self.__send_command(command,b'', response_size)
         if cmd_response.get('status'):
             size = len(self.__data) 
@@ -607,7 +605,7 @@ class ZK(object):
             raise ZKErrorResponse("can't restart device")
 
     def get_time(self):
-        """obtener la hora del equipo"""
+        """get Device Time"""
         command = const.CMD_GET_TIME
         response_size = 1032
         cmd_response = self.__send_command(command, b'', response_size)
@@ -617,7 +615,7 @@ class ZK(object):
             raise ZKErrorResponse("can't get time")
 
     def set_time(self, timestamp):
-        """ colocar la hora del sistema al zk """
+        """ set Device time (pass datetime object)"""
         command = const.CMD_SET_TIME
         command_string = pack(b'I', self.__encode_time(timestamp))
         cmd_response = self.__send_command(command, command_string)
@@ -653,7 +651,7 @@ class ZK(object):
     def test_voice(self, index=0):
         '''
         play test voice
-         0 acceso correcto
+         0 acceso correcto / acceso correcto
          1 password incorrecto / clave incorrecta
          2 la memoria del terminal está llena / acceso denegado
          3 usuario invalido /codigo no valido
@@ -865,8 +863,8 @@ class ZK(object):
     def get_user_template(self, uid, temp_id=0):
         """ ZKFinger VX10.0
             for tcp:
-            command = const.CMD_USERTEMP_RRQ
-            command_string = pack('hb', uid, temp_id)
+            command = const.CMD_USERTEMP_RRQ (doesn't work always)
+            command_string = pack('hb', uid, temp_id) 
         """
         
         command = 88 # comando secreto!!!
@@ -878,15 +876,16 @@ class ZK(object):
             return None #("can't get user template")
         #else
         if cmd_response.get('code') == const.CMD_DATA: # less than 1024!!!
+            resp = self.__data[:-1]
             if self.tcp:
-                size = len(self.__data[8:])
-                return Finger(uid, temp_id, 1, self.__data[8:])
-            else:
-                size = len(self.__data)
-                return Finger(uid, temp_id, 1, self.__data)
+                if resp[-6:] == b'\x00\x00\x00\x00\x00\x00': # padding? bug?
+                    resp = resp[:-6]
+                if self.verbose: print("tcp too small!")
+            return Finger(uid, temp_id, 1, resp)
         if cmd_response.get('code') == const.CMD_PREPARE_DATA:
             data = []
             bytes = self.__get_data_size() #TODO: check with size
+            size = bytes
             if self.tcp:
                 data_recv = self.__sock.recv(bytes + 32)
                 recieved = len(data_recv)
@@ -896,9 +895,11 @@ class ZK(object):
                 response = unpack('HHHH', data_recv[8:16])[0]
                 if recieved >= (bytes + 32): #complete
                     if response == const.CMD_DATA:
-                        resp = data_recv[16:bytes+16] # no ack?
-                        if self.verbose: print ("resp len", len(resp))
-                        return Finger(uid, temp_id, 1, resp)  
+                        resp = data_recv[16:bytes+16][:size-1] # no ack?
+                        if resp[-6:] == b'\x00\x00\x00\x00\x00\x00': # padding? bug?
+                            resp = resp[:-6]
+                        if self.verbose: print ("resp len1", len(resp))
+                        return Finger(uid, temp_id, 1, resp)  #mistery
                     else:
                         if self.verbose: print("broken packet!!!")
                         return None #broken
@@ -913,7 +914,10 @@ class ZK(object):
                     data_recv = self.__sock.recv(16)
                     response = unpack('HHHH', data_recv[8:16])[0]
                     if response == const.CMD_ACK_OK:
-                        resp =  b''.join(data)
+                        resp =  b''.join(data)[:size-1] # testing
+                        if resp[-6:] == b'\x00\x00\x00\x00\x00\x00':
+                            resp = resp[:-6]
+                        if self.verbose: print ("resp len2", len(resp))
                         return Finger(uid, temp_id, 1, resp) 
                 #data_recv[bytes+16:].encode('hex') #included CMD_ACK_OK
                     if self.verbose: print("bad response %s" % data_recv)
@@ -936,9 +940,9 @@ class ZK(object):
                     break
                 if self.verbose: print("still needs %s" % bytes)
         data = b''.join(data)
-        self.free_data()
         #uid 32 fing 03, starts with 4d-9b-53-53-32-31
-        return Finger(uid, temp_id, 1, data)
+        #CMD_USERTEMP_RRQ desn't need [:-1]
+        return Finger(uid, temp_id, 1, data[:-1]) #udp
 
     def get_templates(self):
         """ return array of all fingers """
@@ -948,9 +952,11 @@ class ZK(object):
             if self.verbose: print("WRN: no user data") # debug
             return []
         total_size = unpack('i', templatedata[0:4])[0]
+        print ("get template total size {}, size {} len {}".format(total_size, size, len(templatedata)))
         templatedata = templatedata[4:] #total size not used
         # ZKFinger VX10.0 the only finger firmware tested
         while total_size:
+            #print ("total_size {}".format(total_size))
             size, uid, fid, valid = unpack('HHbb',templatedata[:6])
             template = unpack("%is" % (size-6), templatedata[6:size])[0]
             finger = Finger(uid, fid, valid, template)
@@ -1077,7 +1083,7 @@ class ZK(object):
             if self.verbose: print("A:%i esperando primer regevent" % attempts)
             data_recv = self.__sock.recv(1032) # timeout? tarda bastante...
             self.__ack_ok()
-            if self.verbose: print((data_recv).encode('hex'))
+            if self.verbose: print(codecs.encode(data_recv,'hex'))
             if self.tcp:
                 if len(data_recv) > 16: #not empty
                     res = unpack("H", data_recv.ljust(24,b"\x00")[16:18])[0]
@@ -1096,7 +1102,7 @@ class ZK(object):
             if self.verbose: print ("A:%i esperando 2do regevent" % attempts)
             data_recv = self.__sock.recv(1032) # timeout? tarda bastante...
             self.__ack_ok()
-            if self.verbose: print ((data_recv).encode('hex'))
+            if self.verbose: print (codecs.encode(data_recv, 'hex'))
             if self.tcp:
                 if len(data_recv) > 8: #not empty
                     res = unpack("H", data_recv.ljust(24,b"\x00")[16:18])[0]
@@ -1121,7 +1127,7 @@ class ZK(object):
             if self.verbose: print ("esperando 3er regevent")
             data_recv = self.__sock.recv(1032) # timeout? tarda bastante...
             self.__ack_ok()
-            if self.verbose: print ((data_recv).encode('hex'))
+            if self.verbose: print (codecs.encode(data_recv, 'hex'))
             if self.tcp:
                 res = unpack("H", data_recv.ljust(24,b"\x00")[16:18])[0]
             else:
@@ -1195,8 +1201,8 @@ class ZK(object):
                         uid = tuser[0].uid
                     yield Attendance(uid, user_id, timestamp, status)
                 else:
-                    if self.verbose: print ((data).encode('hex')), len(data)
-                    yield data
+                    if self.verbose: print (codecs.encode(data, 'hex')), len(data)
+                    yield codecs.encode(data, 'hex')
             except timeout:
                 if self.verbose: print ("time out")
                 yield None # return to keep watching
@@ -1232,10 +1238,8 @@ class ZK(object):
             raise ZKErrorResponse("can't read chunk %i:[%i]" % (start, size))
         #else
         if cmd_response.get('code') == const.CMD_DATA: # less than 1024!!!
-            if self.tcp:
-                return self.__data[8:] #TODO: check size?
-            else:
-                return self.__data
+            if self.verbose: print ("size was {} len is {}".format(size, len(self.__data)))
+            return self.__data
         if cmd_response.get('code') == const.CMD_PREPARE_DATA:
             data = []
             bytes = self.__get_data_size() #TODO: check with size
