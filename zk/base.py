@@ -4,6 +4,7 @@ import sys
 from datetime import datetime
 from socket import AF_INET, SOCK_DGRAM, SOCK_STREAM, socket, timeout
 from struct import pack, unpack
+import codecs
 
 from zk import const
 from zk.attendance import Attendance
@@ -177,6 +178,15 @@ class ZK(object):
 
         return pack('H', checksum)
 
+    def __test_tcp_top(self, packet):
+        """ return size!"""
+        if len(packet)<=8: 
+            return 0 # invalid packet
+        tcp_header = unpack('<HHI', packet[:8])
+        if tcp_header[0] == const.MACHINE_PREPARE_DATA_1 and tcp_header[1] == const.MACHINE_PREPARE_DATA_2:
+            return tcp_header[2]
+        return 0 #never everis 0!
+
     def __send_command(self, command, command_string=b'', response_size=8):
         '''
         send command to the terminal
@@ -188,8 +198,9 @@ class ZK(object):
                 top = self.__create_tcp_top(buf)
                 self.__sock.send(top)
                 self.__tcp_data_recv = self.__sock.recv(response_size + 8)
-                self.__tcp_header = unpack('<HHI', self.__tcp_data_recv[:8])
-                self.__tcp_length = self.__tcp_header[2]
+                self.__tcp_length = self.__test_tcp_top(self.__tcp_data_recv)
+                if self.__tcp_length == 0:
+                    raise ZKNetworkError("TCP Packet  invalid")    
                 self.__header = unpack('HHHH', self.__tcp_data_recv[8:16])
                 self.__data_recv = self.__tcp_data_recv[8:] # dirty hack
             else:
@@ -725,7 +736,8 @@ class ZK(object):
         if cmd_response.get('status'):
             return True
         else:
-            raise ZKErrorResponse("can't test voice")
+            return False #some devices doesn't support sound
+            #raise ZKErrorResponse("can't test voice")
 
     def set_user(self, uid, name, privilege=0, password='', group_id='', user_id='', card=0):
         '''
@@ -832,6 +844,7 @@ class ZK(object):
         command = const.CMD_DELETE_USERTEMP
         command_string = pack('hb', uid, temp_id)
         cmd_response = self.__send_command(command, command_string)
+        #        users = list(filter(lambda x: x.uid==uid, users))
         if cmd_response.get('status'):
             return True #refres_data (1013)?
         else:
@@ -845,7 +858,6 @@ class ZK(object):
             if  not user_id:
                 #we need user_id (uid2)
                 users = self.get_users()
-                users = list(filter(lambda x: x.uid==uid, users))
                 if len(users) == 1:
                     user_id = users[0].user_id
                 else: #double? posibly empty
@@ -888,7 +900,12 @@ class ZK(object):
             size = bytes
             if self.tcp:
                 data_recv = self.__sock.recv(bytes + 32)
+                tcp_length = self.__test_tcp_top(data_recv)
+                if tcp_length == 0:
+                    print "Incorrect tcp packet"
+                    return None
                 recieved = len(data_recv)
+                if self.verbose: print ("recieved {}, size {} rec {}".format(recieved, size, data_recv.encode('hex')))
                 tcp_length = unpack('HHI', data_recv[:8])[2] #bytes+8
                 if tcp_length < (bytes + 8):
                     if self.verbose: print ("request chunk too big!")
@@ -897,6 +914,7 @@ class ZK(object):
                     if response == const.CMD_DATA:
                         resp = data_recv[16:bytes+16][:size-1] # no ack?
                         if resp[-6:] == b'\x00\x00\x00\x00\x00\x00': # padding? bug?
+                            if self.verbose: print ("cutting from",len(resp))
                             resp = resp[:-6]
                         if self.verbose: print ("resp len1", len(resp))
                         return Finger(uid, temp_id, 1, resp)  #mistery
@@ -904,11 +922,13 @@ class ZK(object):
                         if self.verbose: print("broken packet!!!")
                         return None #broken
                 else: # incomplete
+                    if self.verbose: print ("try incomplete")
                     data.append(data_recv[16:]) # w/o tcp and header
                     bytes -= recieved-16
                     while bytes>0: #jic
                         data_recv = self.__sock.recv(bytes) #ideal limit?
                         recieved = len(data_recv)
+                        if self.verbose: print ("partial recv {}".format(recieved))
                         data.append(data_recv) # w/o tcp and header
                         bytes -= recieved
                     data_recv = self.__sock.recv(16)
@@ -928,7 +948,7 @@ class ZK(object):
             while True: #limitado por respuesta no por tamaño
                 data_recv = self.__sock.recv(response_size)
                 response = unpack('HHHH', data_recv[:8])[0]
-                if self.verbose: print("# %s packet response is: %s" % (pac, response))
+                if self.verbose: print("# packet response is: {}".format(response))
                 if response == const.CMD_DATA:
                     data.append(data_recv[8:]) #header turncated
                     bytes -= 1024
@@ -939,10 +959,12 @@ class ZK(object):
                     if self.verbose: print("broken!")
                     break
                 if self.verbose: print("still needs %s" % bytes)
-        data = b''.join(data)
+        data = b''.join(data)[:-1]
+        if data[-6:] == b'\x00\x00\x00\x00\x00\x00': # padding? bug?
+                            data = data[:-6]
         #uid 32 fing 03, starts with 4d-9b-53-53-32-31
         #CMD_USERTEMP_RRQ desn't need [:-1]
-        return Finger(uid, temp_id, 1, data[:-1]) #udp
+        return Finger(uid, temp_id, 1, data)
 
     def get_templates(self):
         """ return array of all fingers """
@@ -1279,7 +1301,7 @@ class ZK(object):
             while True: #limitado por respuesta no por tamaño
                 data_recv = self.__sock.recv(response_size)
                 response = unpack('HHHH', data_recv[:8])[0]
-                if self.verbose: print ("# %s packet response is: %s" % (pac, response))
+                if self.verbose: print ("# packet response is: {}".format(response))
                 if response == const.CMD_DATA:
                     data.append(data_recv[8:]) #header turncated
                     bytes -= 1024 #UDP

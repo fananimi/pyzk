@@ -24,7 +24,7 @@ parser.add_argument('-a', '--address',
 parser.add_argument('-p', '--port', type=int,
                     help='ZK device port [4370]', default=4370)
 parser.add_argument('-T', '--timeout', type=int,
-                    help='Default [10] seconds (0: disable timeout)', default=10)
+                    help='Default [10] seconds (0: disable timeout)', default=1)
 parser.add_argument('-P', '--password', type=int,
                     help='Device code/password', default=0)
 parser.add_argument('-f', '--force-udp', action="store_true",
@@ -163,8 +163,8 @@ try:
         else:
             conn.test_voice(23) # not registered
         conn.refresh_data()
-    print ("Voice Test ...")
-    conn.test_voice(10)
+    #print ("Voice Test ...")
+    #conn.test_voice(10)
     if args.templates:
         print ("Read Templates...")
         templates = conn.get_templates()
