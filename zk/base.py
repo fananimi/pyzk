@@ -776,11 +776,15 @@ class ZK(object):
         if not isinstance(user, User):
             #try uid
             users = self.get_users()
-            users = list(filter(lambda x: x.uid==user, users))
-            if len(users) == 1:
-                user = users[0]
+            tusers = list(filter(lambda x: x.uid==user, users))
+            if len(tusers) == 1:
+                user = tusers[0]
             else:
-                raise ZKErrorResponse("Cant find user")
+                tusers = list(filter(lambda x: x.user_id==str(user), users))
+                if len(tusers) == 1:
+                    user = tusers[0]
+                else:
+                    raise ZKErrorResponse("Cant find user")
         if isinstance(fingers, Finger):
             fingers = [fingers]
         fpack = ""
@@ -834,13 +838,19 @@ class ZK(object):
         else:
             raise ZKErrorResponse("Cant send chunk")
 
-    def delete_user_template(self, uid, temp_id=0):
+    def delete_user_template(self, uid=0, temp_id=0, user_id=''):
         """
         Delete specific template
         for tcp via user_id:
             command = 134 # unknown?
             command_string = pack('<24sB', user_id, temp_id)    
         """
+        if not uid:
+            users = self.get_users()
+            users = list(filter(lambda x: x.user_id==str(user_id), users))
+            if not users:
+                return False
+            uid = users[0].uid
         command = const.CMD_DELETE_USERTEMP
         command_string = pack('hb', uid, temp_id)
         cmd_response = self.__send_command(command, command_string)
@@ -865,6 +875,12 @@ class ZK(object):
             command = 133 #const.CMD_DELETE_USER_2
             command_string = pack('24s',str(user_id)) 
         else:"""
+        if not uid:
+            users = self.get_users()
+            users = list(filter(lambda x: x.user_id==str(user_id), users))
+            if not users:
+                return False
+            uid = users[0].uid
         command = const.CMD_DELETE_USER
         command_string = pack('h', uid)
         cmd_response = self.__send_command(command, command_string)
@@ -872,18 +888,34 @@ class ZK(object):
             raise ZKErrorResponse("can't delete user")
         self.refresh_data()
 
-    def get_user_template(self, uid, temp_id=0):
+    def get_user_template(self, uid, temp_id=0, user_id=''):
         """ ZKFinger VX10.0
             for tcp:
             command = const.CMD_USERTEMP_RRQ (doesn't work always)
             command_string = pack('hb', uid, temp_id) 
         """
-        
-        command = 88 # comando secreto!!!
-        command_string = pack('hb', uid, temp_id)
-        response_size = 1024 + 8
-        cmd_response = self.__send_command(command, command_string, response_size)
-        data = []
+        if not uid:
+            users = self.get_users()
+            users = list(filter(lambda x: x.user_id==str(user_id), users))
+            if not users:
+                return False
+            uid = users[0].uid
+        for _retries in range(3):
+            command = 88 # comando secreto!!!
+            command_string = pack('hb', uid, temp_id)
+            response_size = 1024 + 8
+            cmd_response = self.__send_command(command, command_string, response_size)
+            data = self.__recieve_chunk()
+            if data is not None:
+                resp = data[:-1] # 01, valid byte?
+                if resp[-6:] == b'\x00\x00\x00\x00\x00\x00': # padding? bug?
+                    resp = resp[:-6]
+                return Finger(uid, temp_id, 1, resp)
+            if self.verbose: print ("retry get_user_template")
+        else:
+            if self.verbose: print ("can't read/find finger")
+            return None
+        #-----------------------------------------------------------------
         if not cmd_response.get('status'):
             return None #("can't get user template")
         #else
@@ -902,7 +934,7 @@ class ZK(object):
                 data_recv = self.__sock.recv(bytes + 32)
                 tcp_length = self.__test_tcp_top(data_recv)
                 if tcp_length == 0:
-                    print "Incorrect tcp packet"
+                    print ("Incorrect tcp packet")
                     return None
                 recieved = len(data_recv)
                 if self.verbose: print ("recieved {}, size {} rec {}".format(recieved, size, data_recv.encode('hex')))
@@ -1205,10 +1237,11 @@ class ZK(object):
                     continue"""
                 if len(data) == 12: #class 1 attendance
                     user_id, status, match, timehex = unpack('<IBB6s', data)
+                    user_id = str(user_id)
                     timestamp = self.__decode_timehex(timehex)
-                    tuser = list(filter(lambda x: int(x.user_id) == user_id, users))
+                    tuser = list(filter(lambda x: x.user_id == user_id, users))
                     if not tuser:
-                        uid = user_id
+                        uid = int(user_id)
                     else:
                         uid = tuser[0].uid
                     yield Attendance(uid, user_id, timestamp, status)
@@ -1216,7 +1249,7 @@ class ZK(object):
                     user_id,  status, match, timehex, res = unpack('<24sBB6sI', data)
                     user_id = (user_id.split(b'\x00')[0]).decode(errors='ignore')
                     timestamp = self.__decode_timehex(timehex)
-                    tuser = list(filter(lambda x: int(x.user_id) == int(user_id), users))
+                    tuser = list(filter(lambda x: x.user_id == user_id, users))
                     if not tuser:
                         uid = int(user_id)
                     else:
@@ -1250,12 +1283,93 @@ class ZK(object):
         else:
             raise ZKErrorResponse("can't clear data")
 
+    def __recieve_chunk(self):
+        """ recieve a chunk """
+        if self.__response == const.CMD_DATA: # less than 1024!!!
+            if self.verbose: print ("size was {} len is {}".format(size, len(self.__data)))
+            return self.__data #without headers
+        elif self.__response== const.CMD_PREPARE_DATA:
+            data = []
+            size = self.__get_data_size()
+            if self.verbose: print ("recieve chunk:data size is", size)
+            if self.tcp:
+                data_recv = self.__sock.recv(size + 32)
+                tcp_length = self.__test_tcp_top(data_recv)
+                if tcp_length == 0:
+                    print ("Incorrect tcp packet")
+                    return None
+                recieved = len(data_recv)
+                if self.verbose: print ("recieved {}, size {}".format(recieved, size))
+                if tcp_length < (size + 8):
+                    if self.verbose: print ("request chunk too big!")
+                response = unpack('HHHH', data_recv[8:16])[0]
+                if recieved >= (size + 32): #complete
+                    if response == const.CMD_DATA:
+                        resp = data_recv[16 : size + 16] # no ack?
+                        if self.verbose: print ("resp complete len", len(resp))
+                        return resp    
+                    else:
+                        if self.verbose: print("broken packet!!! {}".format(response))
+                        return None #broken
+                else: # incomplete
+                    if self.verbose: print ("try incomplete")
+                    data.append(data_recv[16:]) # w/o tcp and header
+                    size -= recieved-16
+                    while size>0: #jic
+                        data_recv = self.__sock.recv(size) #ideal limit?
+                        recieved = len(data_recv)
+                        if self.verbose: print ("partial recv {}".format(recieved))
+                        data.append(data_recv) # w/o tcp and header
+                        size -= recieved
+                    #get cmd_ack_ok
+                    data_recv = self.__sock.recv(16)
+                    #could be broken
+                    if len(data_recv) < 16:
+                        print ("trying to complete broken ACK")
+                        data_recv += self.__sock.recv(16 - len(data_recv))
+                    if not self.__test_tcp_top(data_recv):
+                        if self.verbose: print ("invalid tcp ACK OK")
+                        return None #b''.join(data) # incomplete?
+                    response = unpack('HHHH', data_recv[8:16])[0]
+                    if response == const.CMD_ACK_OK:
+                        return b''.join(data)
+                #data_recv[bytes+16:].encode('hex') #included CMD_ACK_OK
+                    if self.verbose: print("bad response %s" % data_recv)
+                    if self.verbose: print (data)
+                    return None
+            #else udp
+            while True: #limitado por respuesta no por tamaño
+                data_recv = self.__sock.recv(response_size)
+                response = unpack('HHHH', data_recv[:8])[0]
+                if self.verbose: print ("# packet response is: {}".format(response))
+                if response == const.CMD_DATA:
+                    data.append(data_recv[8:]) #header turncated
+                    size -= 1024 #UDP
+                elif response == const.CMD_ACK_OK:
+                    break #without problem.
+                else:
+                    #truncado! continuar?
+                    if self.verbose: print ("broken!")
+                    break
+                if self.verbose: print ("still needs %s" % size)
+            return b''.join(data)
+        else:
+            if self.verbose: print ("invalid response %s" % self.__response)
+            return None #("can't get user template")
+
     def __read_chunk(self, start, size):
         """ read a chunk from buffer """
-        command = 1504 #CMD_READ_BUFFER
-        command_string = pack('<ii', start, size)
-        response_size = 1024 + 8
-        cmd_response = self.__send_command(command, command_string, response_size)
+        for _retries in range(3):
+            command = 1504 #CMD_READ_BUFFER
+            command_string = pack('<ii', start, size)
+            response_size = 1024 + 8
+            cmd_response = self.__send_command(command, command_string, response_size)
+            data = self.__recieve_chunk()
+            if data is not None:
+                return data
+        else:
+            raise ZKErrorResponse("can't read chunk %i:[%i]" % (start, size))
+        #------------------------------------------
         if not cmd_response.get('status'):
             raise ZKErrorResponse("can't read chunk %i:[%i]" % (start, size))
         #else
@@ -1378,9 +1492,10 @@ class ZK(object):
         elif record_size == 16: # extended
             while len(attendance_data) >= 16:
                 user_id, timestamp, status, verified, reserved, workcode = unpack('<I4sBB2sI', attendance_data.ljust(16, b'\x00')[:16])
+                user_id = str(user_id)
                 if self.verbose: print(codecs.encode(attendance_data[:16], 'hex'))
                 attendance_data = attendance_data[16:]
-                tuser = list(filter(lambda x: int(x.user_id) == int(user_id), users))
+                tuser = list(filter(lambda x: x.user_id == user_id, users))
                 if not tuser: 
                     if self.verbose: print("no uid {}", user_id)
                     uid = str(user_id)
