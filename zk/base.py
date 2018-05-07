@@ -432,7 +432,8 @@ class ZK(object):
             device = self.__data.split(b'=')[-1].split(b'\x00')[0]
             return device.decode()
         else:
-            raise ZKErrorResponse("can't read device name")
+            return "" #no name
+            #raise ZKErrorResponse("can't read device name")
 
     def get_face_version(self):
         '''
@@ -1327,7 +1328,7 @@ class ZK(object):
                     #could be broken
                     if len(data_recv) < 16:
                         print ("trying to complete broken ACK")
-                        data_recv += self.__sock.recv(16 - len(data_recv))
+                        data_recv += self.__sock.recv(16 - len(data_recv)) #TODO: CHECK HERE_!
                     if not self.__test_tcp_top(data_recv):
                         if self.verbose: print ("invalid tcp ACK OK")
                         return None #b''.join(data) # incomplete?
@@ -1340,7 +1341,7 @@ class ZK(object):
                     return None
             #else udp
             while True: #limitado por respuesta no por tamaño
-                data_recv = self.__sock.recv(response_size)
+                data_recv = self.__sock.recv(1024+8)
                 response = unpack('HHHH', data_recv[:8])[0]
                 if self.verbose: print ("# packet response is: {}".format(response))
                 if response == const.CMD_DATA:
