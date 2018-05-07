@@ -65,7 +65,7 @@ class ZK_helper(object):
         import subprocess, platform
 
         # Ping parameters as function of OS
-        ping_str = "-n 1" if  platform.system().lower()=="windows" else "-c 1"
+        ping_str = "-n 1" if  platform.system().lower()=="windows" else "-c 1 -W 5"
         args = "ping " + " " + ping_str + " " + self.ip
         need_sh = False if  platform.system().lower()=="windows" else True
         # Ping
