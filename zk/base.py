@@ -116,6 +116,7 @@ class ZK(object):
         self.users_av = 0
         self.rec_av = 0
         self.user_packet_size = 28 # default zk6
+        self.end_live_capture = False
         self.__session_id = 0
         self.__reply_id = const.USHRT_MAX-1
         self.__data_recv = None
