@@ -115,6 +115,8 @@ class ZK(object):
         self.fingers_av = 0
         self.users_av = 0
         self.rec_av = 0
+        self.next_uid = 1
+        self.next_user_id='1'
         self.user_packet_size = 28 # default zk6
         self.end_live_capture = False
         self.__session_id = 0
@@ -1025,13 +1027,16 @@ class ZK(object):
     def get_users(self): #ALWAYS CALL TO GET correct user_packet_size
         """ return all user """
         self.read_sizes() # last update
-        if self.users == 0: #lazy 
+        if self.users == 0: #lazy
+            self.next_uid = 1
+            self.next_user_id='1'
             return []
         users = []
+        max_uid = 0
         userdata, size = self.read_with_buffer(const.CMD_USERTEMP_RRQ, const.FCT_USER)
         if self.verbose: print("user size %i" % size)
         if size <= 4:
-            if self.verbose: print("WRN: no user data")# debug
+            print("WRN: missing user data")# debug
             return []
         total_size = unpack("I",userdata[:4])[0]
         self.user_packet_size = total_size / self.users
@@ -1041,6 +1046,7 @@ class ZK(object):
         if self.user_packet_size == 28:
             while len(userdata) >= 28:
                 uid, privilege, password, name, card, group_id, timezone, user_id = unpack('<HB5s8sIxBhI',userdata.ljust(28, b'\x00')[:28])
+                if uid > max_uid: max_uid = uid
                 password = (password.split(b'\x00')[0]).decode(errors='ignore')
                 name = (name.split(b'\x00')[0]).decode(errors='ignore').strip()
                 #card = unpack('I', card)[0] #or hex value?
@@ -1064,12 +1070,24 @@ class ZK(object):
                 name = (name.split(b'\x00')[0]).decode(errors='ignore').strip()
                 group_id = (group_id.split(b'\x00')[0]).decode(errors='ignore').strip()
                 user_id = (user_id.split(b'\x00')[0]).decode(errors='ignore')
+                if uid > max_uid: max_uid = uid
                 #card = int(unpack('I', separator)[0])
                 if not name:
                     name = "NN-%s" % user_id
                 user = User(uid, name, privilege, password, group_id, user_id, card)
                 users.append(user)
                 userdata = userdata[72:]
+        #get limits!
+        max_uid += 1
+        self.next_uid = max_uid
+        self.next_user_id = str(max_uid)
+        #re check
+        while True:
+            if any(u for u in users if u.user_id == self.next_user_id):
+                max_uid += 1
+                self.next_user_id = str(max_uid)
+            else:
+                break
         return users
 
     def cancel_capture(self):
