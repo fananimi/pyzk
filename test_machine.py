@@ -170,7 +170,7 @@ try:
         templates = conn.get_templates()
         for tem in templates:
             tem2 =conn.get_user_template(tem.uid,tem.fid)
-            if temp2 is None:
+            if tem2 is None:
                 print ("bulk! %s" % tem)
             elif tem == tem2: # compare with alternative method
                 print ("OK! %s" % tem)
