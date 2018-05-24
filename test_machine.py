@@ -139,8 +139,8 @@ try:
         user_id = input('User ID2   :')
         card = input('Card       :')
         card = int(card) if card else 0
-        if prev:
-            conn.delete_user(uid) #borrado previo
+        #if prev:
+        #    conn.delete_user(uid) #borrado previo
         try:
             conn.set_user(uid, name, privilege, password, '', user_id, card)
             args.enrolluser = uid

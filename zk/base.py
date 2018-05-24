@@ -307,6 +307,7 @@ class ZK(object):
         '''
         connect to the device
         '''
+        self.end_live_capture = False # jic
         if not self.ommit_ping and not self.helper.test_ping():
             raise ZKNetworkError("can't reach device (ping %s)" % self.__address[0])
         if not self.force_udp and self.helper.test_tcp() == 0: #ok
@@ -772,6 +773,10 @@ class ZK(object):
         if not cmd_response.get('status'):
             raise ZKErrorResponse("Cant set user")
         self.refresh_data()
+        if self.next_uid == uid:
+            self.next_uid += 1 # better recalculate again
+        if self.next_user_id == user_id:
+            self.next_user_id = str(self.next_uid)
         
     def save_user_template(self, user, fingers=[]):
         """ save user and template """
