@@ -14,7 +14,7 @@ Complete documentation can be found at [Readthedocs](http://pyzk.readthedocs.io/
 
 # Api Usage
 
-Just create a ZK object and you will ready to call api.
+Just create a ZK object and you will be ready to call api.
 
 * Basic Usage
 ```python
@@ -165,6 +165,24 @@ conn.restart()
 conn.free_data()
 ```
 
+* Live Capture!
+
+```python
+# live capture! (timeout at 10s)
+for attendance in conn.live_capture():
+    if attendance is None:
+        # implement here timeout logic
+        pass
+    else:
+        print (attendance) # Attendance object
+    #if you need to break gracefully just set
+    #   conn.end_live_capture = True
+    # on interactive mode,
+    # use Ctrl+C to break gracefully
+    # this way it restores timeout
+    # and disables live capture
+```
+
 Test Machine
 
 ```sh
@@ -184,6 +202,7 @@ optional arguments:
   -P PASSWORD, --password PASSWORD
                         Device code/password
   -f, --force-udp       Force UDP communication
+  -v, --verbose         Print debug information
   -t, --templates       Get templates / fingers
   -r, --records         Get attendance records
   -u, --updatetime      Update Date/Time
@@ -202,7 +221,7 @@ optional arguments:
 
 
 
-# Related Project
+# Related Project (TODO: chekc compatibility)
 
 * [zkcluster](https://github.com/fananimi/zkcluster/ "zkcluster project") is a django apps to manage multiple fingerprint devices.
 
