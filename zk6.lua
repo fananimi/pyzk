@@ -13,10 +13,6 @@
 --
 -- OVERVIEW:
 -- This script creates an dissector for the UDP protocol on ZK products. 
--- to the DNS protocol. That's OK. The goal isn't to fully dissect DNS properly - Wireshark already has a good
--- DNS dissector built-in. We don't need another one. We also have other example Lua scripts, but I don't think
--- they do a good job of explaining things, and the nice thing about this one is getting capture files to
--- run it against is trivial. (plus I uploaded one)
 --
 -- HOW TO RUN THIS SCRIPT:
 -- Wireshark and Tshark support multiple ways of loading Lua scripts: through a dofile() call in init.lua,
@@ -126,98 +122,99 @@ local zk = Proto("zk6","ZK600 UDP Protocol")
 local zk_tcp = Proto("zk8","ZK800 TCP Protocol")
 
 local rfct = {
-	[1] = "FCT_ATTLOG",
-	[8] = "FCT_WORKCODE",
-	[2] = "FCT_FINGERTMP",
-	[4] = "FCT_OPLOG",
-	[5] = "FCT_USER",
-	[6] = "FCT_SMS",
-	[7] = "FCT_UDATA"
+    [1] = "FCT_ATTLOG",
+    [8] = "FCT_WORKCODE",
+    [2] = "FCT_FINGERTMP",
+    [4] = "FCT_OPLOG",
+    [5] = "FCT_USER",
+    [6] = "FCT_SMS",
+    [7] = "FCT_UDATA"
 }
 
 local rcomands = {
-	[7] = "CMD_DB_RRQ",
-	[8] = "CMD_USER_WRQ",
-	[9] = "CMD_USERTEMP_RRQ",
-	[10] = "CMD_USERTEMP_WRQ",
-	[11] = "CMD_OPTIONS_RRQ",
-	[12] = "CMD_OPTIONS_WRQ",
-	[13] = "CMD_ATTLOG_RRQ",
-	[14] = "CMD_CLEAR_DATA",
-	[15] = "CMD_CLEAR_ATTLOG",
-	[18] = "CMD_DELETE_USER",
-	[19] = "CMD_DELETE_USERTEMP",
-	[20] = "CMD_CLEAR_ADMIN",
-	[21] = "CMD_USERGRP_RRQ",
-	[22] = "CMD_USERGRP_WRQ",
-	[23] = "CMD_USERTZ_RRQ",
-	[24] = "CMD_USERTZ_WRQ",
-	[25] = "CMD_GRPTZ_RRQ",
-	[26] = "CMD_GRPTZ_WRQ",
-	[27] = "CMD_TZ_RRQ",
-	[28] = "CMD_TZ_WRQ",
-	[29] = "CMD_ULG_RRQ",
-	[30] = "CMD_ULG_WRQ",
-	[31] = "CMD_UNLOCK",
-	[32] = "CMD_CLEAR_ACC",
-	[33] = "CMD_CLEAR_OPLOG",
-	[34] = "CMD_OPLOG_RRQ",
-	[50] = "CMD_GET_FREE_SIZES",
-	[57] = "CMD_ENABLE_CLOCK",
-	[60] = "CMD_STARTVERIFY",
-	[61] = "CMD_STARTENROLL",
-	[62] = "CMD_CANCELCAPTURE",
-	[64] = "CMD_STATE_RRQ",
-	[66] = "CMD_WRITE_LCD",
-	[67] = "CMD_CLEAR_LCD",
-	[69] = "CMD_GET_PINWIDTH",
-	[70] = "CMD_SMS_WRQ",
-	[71] = "CMD_SMS_RRQ",
-	[72] = "CMD_DELETE_SMS",
-	[73] = "CMD_UDATA_WRQ",
-	[74] = "CMD_DELETE_UDATA",
-	[75] = "CMD_DOORSTATE_RRQ",
-	[76] = "CMD_WRITE_MIFARE",
-	[78] = "CMD_EMPTY_MIFARE",
-	[201] = "CMD_GET_TIME",
-	[202] = "CMD_SET_TIME",
-	[500] = "CMD_REG_EVENT",
-	[1000] = "CMD_CONNECT",
-	[1001] = "CMD_EXIT",
-	[1002] = "CMD_ENABLEDEVICE",
-	[1003] = "CMD_DISABLEDEVICE",
-	[1004] = "CMD_RESTART",
-	[1005] = "CMD_POWEROFF",
-	[1006] = "CMD_SLEEP",
-	[1007] = "CMD_RESUME",
-	[1009] = "CMD_CAPTUREFINGER",
-	[1011] = "CMD_TEST_TEMP",
-	[1012] = "CMD_CAPTUREIMAGE",
-	[1013] = "CMD_REFRESHDATA",
-	[1014] = "CMD_REFRESHOPTION",
-	[1017] = "CMD_TESTVOICE",
-	[1100] = "CMD_GET_VERSION",
-	[1101] = "CMD_CHANGE_SPEED",
-	[1102] = "CMD_AUTH",
-	[1500] = "CMD_PREPARE_DATA",
-	[1501] = "CMD_DATA",
-	[1502] = "CMD_FREE_DATA",
-	[1503] = "CMD_PREPARE_BUFFER",
-	[1504] = "CMD_READ_BUFFER",
-	[2000] = "CMD_ACK_OK",
-	[2001] = "CMD_ACK_ERROR",
-	[2002] = "CMD_ACK_DATA",
-	[2003] = "CMD_ACK_RETRY",
-	[2004] = "CMD_ACK_REPEAT",
-	[2005] = "CMD_ACK_UNAUTH",
-	[65535] = "CMD_ACK_UNKNOWN",
-	[65533] = "CMD_ACK_ERROR_CMD",
-	[65532] = "CMD_ACK_ERROR_INIT",
-	[65531] = "CMD_ACK_ERROR_DATA"
+    [7] = "CMD_DB_RRQ",
+    [8] = "CMD_USER_WRQ",
+    [9] = "CMD_USERTEMP_RRQ",
+    [10] = "CMD_USERTEMP_WRQ",
+    [11] = "CMD_OPTIONS_RRQ",
+    [12] = "CMD_OPTIONS_WRQ",
+    [13] = "CMD_ATTLOG_RRQ",
+    [14] = "CMD_CLEAR_DATA",
+    [15] = "CMD_CLEAR_ATTLOG",
+    [18] = "CMD_DELETE_USER",
+    [19] = "CMD_DELETE_USERTEMP",
+    [20] = "CMD_CLEAR_ADMIN",
+    [21] = "CMD_USERGRP_RRQ",
+    [22] = "CMD_USERGRP_WRQ",
+    [23] = "CMD_USERTZ_RRQ",
+    [24] = "CMD_USERTZ_WRQ",
+    [25] = "CMD_GRPTZ_RRQ",
+    [26] = "CMD_GRPTZ_WRQ",
+    [27] = "CMD_TZ_RRQ",
+    [28] = "CMD_TZ_WRQ",
+    [29] = "CMD_ULG_RRQ",
+    [30] = "CMD_ULG_WRQ",
+    [31] = "CMD_UNLOCK",
+    [32] = "CMD_CLEAR_ACC",
+    [33] = "CMD_CLEAR_OPLOG",
+    [34] = "CMD_OPLOG_RRQ",
+    [50] = "CMD_GET_FREE_SIZES",
+    [57] = "CMD_ENABLE_CLOCK",
+    [60] = "CMD_STARTVERIFY",
+    [61] = "CMD_STARTENROLL",
+    [62] = "CMD_CANCELCAPTURE",
+    [64] = "CMD_STATE_RRQ",
+    [66] = "CMD_WRITE_LCD",
+    [67] = "CMD_CLEAR_LCD",
+    [69] = "CMD_GET_PINWIDTH",
+    [70] = "CMD_SMS_WRQ",
+    [71] = "CMD_SMS_RRQ",
+    [72] = "CMD_DELETE_SMS",
+    [73] = "CMD_UDATA_WRQ",
+    [74] = "CMD_DELETE_UDATA",
+    [75] = "CMD_DOORSTATE_RRQ",
+    [76] = "CMD_WRITE_MIFARE",
+    [78] = "CMD_EMPTY_MIFARE",
+    [88] = "_CMD_GET_USER_TEMPLATE",
+    [201] = "CMD_GET_TIME",
+    [202] = "CMD_SET_TIME",
+    [500] = "CMD_REG_EVENT",
+    [1000] = "CMD_CONNECT",
+    [1001] = "CMD_EXIT",
+    [1002] = "CMD_ENABLEDEVICE",
+    [1003] = "CMD_DISABLEDEVICE",
+    [1004] = "CMD_RESTART",
+    [1005] = "CMD_POWEROFF",
+    [1006] = "CMD_SLEEP",
+    [1007] = "CMD_RESUME",
+    [1009] = "CMD_CAPTUREFINGER",
+    [1011] = "CMD_TEST_TEMP",
+    [1012] = "CMD_CAPTUREIMAGE",
+    [1013] = "CMD_REFRESHDATA",
+    [1014] = "CMD_REFRESHOPTION",
+    [1017] = "CMD_TESTVOICE",
+    [1100] = "CMD_GET_VERSION",
+    [1101] = "CMD_CHANGE_SPEED",
+    [1102] = "CMD_AUTH",
+    [1500] = "CMD_PREPARE_DATA",
+    [1501] = "CMD_DATA",
+    [1502] = "CMD_FREE_DATA",
+    [1503] = "CMD_PREPARE_BUFFER",
+    [1504] = "CMD_READ_BUFFER",
+    [2000] = "CMD_ACK_OK",
+    [2001] = "CMD_ACK_ERROR",
+    [2002] = "CMD_ACK_DATA",
+    [2003] = "CMD_ACK_RETRY",
+    [2004] = "CMD_ACK_REPEAT",
+    [2005] = "CMD_ACK_UNAUTH",
+    [65535] = "CMD_ACK_UNKNOWN",
+    [65533] = "CMD_ACK_ERROR_CMD",
+    [65532] = "CMD_ACK_ERROR_INIT",
+    [65531] = "CMD_ACK_ERROR_DATA"
 }
 local rmachines = {
-	[20560] = "MACHINE_PREPARE_DATA_1",
-	[32130] = "MACHINE_PREPARE_DATA_2"
+    [20560] = "MACHINE_PREPARE_DATA_1",
+    [32130] = "MACHINE_PREPARE_DATA_2"
 }
 ----------------------------------------
 local pf_machine1  = ProtoField.new   ("Machine Data 1", "zk8.machine1", ftypes.UINT16, rmachines, base.DEC)
@@ -269,11 +266,11 @@ local pf_uid       = ProtoField.new   ("User ID", "zk6.uid", ftypes.UINT16, nil)
 -- in a real script I wouldn't do it this way; I'd build a table of fields programmatically
 -- and then set dns.fields to it, so as to avoid forgetting a field
 zk.fields = { pf_command, pf_checksum, pf_sesion_id, pf_reply_id, pf_commkey, pf_data, pf_string,
-			  pf_time, pf_start, pf_size, pf_psize, pf_fsize0, pf_fsize1, pf_fsize2, pf_fsize3,
-			  pf_fsizeu, pf_fsize4, pf_fsizef, pf_fsize5,pf_fsizer,pf_fsize6,pf_fsize7,
-			  pf_fsize8,pf_fsizec,pf_fsize9,pf_fsizefc,pf_fsizeuc,pf_fsizerc, pf_uid,
-			  pf_fsizefa,pf_fsizeua,pf_fsizera, pf_fsizeff, pf_fsize10, pf_fsizeffc, 
-			  pf_pbfill, pf_pbcmd, pf_pbarg, pf_pbfill0, pf_pbfree}
+              pf_time, pf_start, pf_size, pf_psize, pf_fsize0, pf_fsize1, pf_fsize2, pf_fsize3,
+              pf_fsizeu, pf_fsize4, pf_fsizef, pf_fsize5,pf_fsizer,pf_fsize6,pf_fsize7,
+              pf_fsize8,pf_fsizec,pf_fsize9,pf_fsizefc,pf_fsizeuc,pf_fsizerc, pf_uid,
+              pf_fsizefa,pf_fsizeua,pf_fsizera, pf_fsizeff, pf_fsize10, pf_fsizeffc, 
+              pf_pbfill, pf_pbcmd, pf_pbarg, pf_pbfill0, pf_pbfree}
 
 zk_tcp.fields = { pf_machine1, pf_machine2, pf_length }
 ----------------------------------------
@@ -450,73 +447,90 @@ function zk.dissector(tvbuf, pktinfo, root)
     tree:add_le(pf_sesion_id, tvbuf:range(4,2))
     tree:add_le(pf_reply_id, tvbuf:range(6,2))
     local command = tvbuf:range(0,2):le_uint()
+    if rcomands[command] ~= nil then
+        --pktinfo.cols.info:set(rcomands[command])
+        pktinfo.cols.info = string.sub(rcomands[command], 5)
+    else
+        --pktinfo.cols.info:set("CMD:" .. tostring(command))
+        pktinfo.cols.info = "CMD:" .. tostring(command)
+    end
     if pktlen > ZK_HDR_LEN then
         remain = pktlen - ZK_HDR_LEN -- TODO: no funciona el prevCommand,
-		if (command == 1102) then 
-			tree:add_le(pf_commkey, tvbuf:range(8,4))
-        elseif (command == 1500) then
+        if (command == 1102) then --CMD_AUTH
+            tree:add_le(pf_commkey, tvbuf:range(8,4))
+        elseif (command == 1500) then --CMD_PREPARE_DATA
             tree:add_le(pf_size, tvbuf:range(8,4))
-			if remain > 8 then
-				tree:add_le(pf_psize, tvbuf:range(12,4))
-			end
-		elseif (command == 12) or (command == 11) then
-			tree:add(pf_string, tvbuf:range(8,remain))
-		elseif (command == 18) then
-			tree:add_le(pf_uid, tvbuf(8,2))
-		elseif (command == 1503) then
-			tree:add(pf_pbfill, tvbuf:range(8,1))
-			tree:add_le(pf_pbcmd, tvbuf:range(9,2))
-			tree:add_le(pf_pbarg, tvbuf:range(11,8))
-		elseif (command == 1504) then
-			tree:add_le(pf_start, tvbuf:range(8,4))
+            pktinfo.cols.info = tostring(pktinfo.cols.info) .. " - " .. tvbuf:range(8,4):le_uint() .. " Bytes"
+            if remain > 8 then
+                tree:add_le(pf_psize, tvbuf:range(12,4))
+            end
+        elseif (command == 12) or (command == 11) then --CMD_OPTIONS_RRQ CMD_OPTIONS_WRQ
+            tree:add(pf_string, tvbuf:range(8,remain))
+            pktinfo.cols.info = tostring(pktinfo.cols.info) .. " - " .. tvbuf:range(8,remain):string()
+        elseif (command == 18) then -- CMD_DELETE_USER
+            tree:add_le(pf_uid, tvbuf(8,2))
+            pktinfo.cols.info = tostring(pktinfo.cols.info) .. " UID: " .. tvbuf:range(8,2):le_uint()
+        elseif (command == 88) then -- CMD_get_user_Template
+            tree:add_le(pf_uid, tvbuf(8,2))
+            tree:add_le(pf_pbfill0, tvbuf(10,1))
+            pktinfo.cols.info = tostring(pktinfo.cols.info) .. " UID: " .. tvbuf:range(8,2):le_uint()
+        elseif (command == 1503) then -- CMD_PREPARE_BUFFER
+            tree:add(pf_pbfill, tvbuf:range(8,1))
+            tree:add_le(pf_pbcmd, tvbuf:range(9,2))
+            tree:add_le(pf_pbarg, tvbuf:range(11,8))
+            pktinfo.cols.info = tostring(pktinfo.cols.info) .. " - " .. rcomands[tvbuf:range(9,2):le_uint()]
+        elseif (command == 1504) then --CMD_READ_BUFFER
+            tree:add_le(pf_start, tvbuf:range(8,4))
             tree:add_le(pf_size, tvbuf:range(12,4))
-		elseif (prevCommand == 1503) then
+            pktinfo.cols.info = tostring(pktinfo.cols.info) .. " [" .. tvbuf:range(8,4):le_uint() .. "] -> " .. tvbuf:range(12,4):le_uint()
+        elseif (command == 1501) then --CMD_DATA
+            pktinfo.cols.info = tostring(pktinfo.cols.info) .. " " .. (remain) .. " Bytes"
+            tree:add(pf_string, tvbuf:range(8,remain))
+        elseif (prevCommand == 1503) then -- CMD_PREPARE_BUFFER OK!
             tree:add_le(pf_pbfill0, tvbuf:range(8,1))
-			tree:add_le(pf_size, tvbuf:range(9,4))
+            tree:add_le(pf_size, tvbuf:range(9,4))
             tree:add_le(pf_psize, tvbuf:range(13,4))
-			tree:add_le(pf_pbfree, tvbuf:range(17,4))
-		elseif (prevCommand == 12) or (prevCommand == 11) or (prevCommand == 1100) then
-			tree:add(pf_string, tvbuf:range(8,remain))
+            tree:add_le(pf_pbfree, tvbuf:range(17,4))
+            pktinfo.cols.info = tostring(pktinfo.cols.info) .. " BUFFER [" .. tvbuf:range(9,4):le_uint() .. "] (" .. tvbuf:range(13,4):le_uint() .. ")"
+        elseif (prevCommand == 12) or (prevCommand == 11) or (prevCommand == 1100) then --CMD_OPTIONS_RRQ CMD_OPTIONS_WRQ OK
+            tree:add(pf_string, tvbuf:range(8,remain))
+            pktinfo.cols.info = tostring(pktinfo.cols.info) .. " RESP " .. tvbuf:range(8,remain):string()
         elseif (prevCommand == 201) or (prevCommand == 202) then
             local ts = tvbuf:range(8,4):le_uint()
             tree:add_le(pf_time, tvbuf:range(8,4))
-		elseif (prevCommand == 50) then
-			tree:add_le(pf_fsize0, tvbuf:range(8,4))
-			tree:add_le(pf_fsize1, tvbuf:range(12,4))
-			tree:add_le(pf_fsize2, tvbuf:range(16,4))
-			tree:add_le(pf_fsize3, tvbuf:range(20,4))
-			tree:add_le(pf_fsizeu, tvbuf:range(24,4))
-			tree:add_le(pf_fsize4, tvbuf:range(28,4))
-			tree:add_le(pf_fsizef, tvbuf:range(32,4))
-			tree:add_le(pf_fsize5, tvbuf:range(36,4))
-			tree:add_le(pf_fsizer, tvbuf:range(40,4))
-			tree:add_le(pf_fsize6, tvbuf:range(44,4))
-			tree:add_le(pf_fsize7, tvbuf:range(48,4))
-			tree:add_le(pf_fsize8, tvbuf:range(52,4))
-			tree:add_le(pf_fsizec, tvbuf:range(56,4))
-			tree:add_le(pf_fsize9, tvbuf:range(60,4))
-			tree:add_le(pf_fsizefc, tvbuf:range(64,4))
-			tree:add_le(pf_fsizeuc, tvbuf:range(68,4))
-			tree:add_le(pf_fsizerc, tvbuf:range(72,4))
-			tree:add_le(pf_fsizefa, tvbuf:range(76,4))
-			tree:add_le(pf_fsizeua, tvbuf:range(80,4))
-			tree:add_le(pf_fsizera, tvbuf:range(84,4))
-			if remain > 80 then
-			tree:add_le(pf_fsizeff, tvbuf:range(88,4))
-			tree:add_le(pf_fsize10, tvbuf:range(92,4))
-			tree:add_le(pf_fsizeffc, tvbuf:range(96,4))
-			end
+        elseif (prevCommand == 50) then
+            tree:add_le(pf_fsize0, tvbuf:range(8,4))
+            tree:add_le(pf_fsize1, tvbuf:range(12,4))
+            tree:add_le(pf_fsize2, tvbuf:range(16,4))
+            tree:add_le(pf_fsize3, tvbuf:range(20,4))
+            tree:add_le(pf_fsizeu, tvbuf:range(24,4))
+            tree:add_le(pf_fsize4, tvbuf:range(28,4))
+            tree:add_le(pf_fsizef, tvbuf:range(32,4))
+            tree:add_le(pf_fsize5, tvbuf:range(36,4))
+            tree:add_le(pf_fsizer, tvbuf:range(40,4))
+            tree:add_le(pf_fsize6, tvbuf:range(44,4))
+            tree:add_le(pf_fsize7, tvbuf:range(48,4))
+            tree:add_le(pf_fsize8, tvbuf:range(52,4))
+            tree:add_le(pf_fsizec, tvbuf:range(56,4))
+            tree:add_le(pf_fsize9, tvbuf:range(60,4))
+            tree:add_le(pf_fsizefc, tvbuf:range(64,4))
+            tree:add_le(pf_fsizeuc, tvbuf:range(68,4))
+            tree:add_le(pf_fsizerc, tvbuf:range(72,4))
+            tree:add_le(pf_fsizefa, tvbuf:range(76,4))
+            tree:add_le(pf_fsizeua, tvbuf:range(80,4))
+            tree:add_le(pf_fsizera, tvbuf:range(84,4))
+            if remain > 80 then
+            tree:add_le(pf_fsizeff, tvbuf:range(88,4))
+            tree:add_le(pf_fsize10, tvbuf:range(92,4))
+            tree:add_le(pf_fsizeffc, tvbuf:range(96,4))
+            end
         else
             -- tree:add_le(pf_data, tvbuf:range(8,remain)) most time we need strings
-			tree:add(pf_string, tvbuf:range(8,remain))
+            tree:add(pf_string, tvbuf:range(8,remain))
         end
     end
     dprint2("zk.dissector returning",pktlen)
-    if rcomands[command] ~= nil then
-        pktinfo.cols.info:set(rcomands[command])
-    else
-        pktinfo.cols.info:set("CMD:" .. tostring(command))
-    end
+
     prevCommand = command
     -- tell wireshark how much of tvbuff we dissected
     return pktlen
@@ -529,7 +543,7 @@ DissectorTable.get("udp.port"):add(default_settings.port, zk)
 
 function zk_tcp.dissector(tvbuf, pktinfo, root)
     dprint2("zk_tcp.dissector called")
-	local pktlen = tvbuf:reported_length_remaining()
+    local pktlen = tvbuf:reported_length_remaining()
 
     -- We start by adding our protocol to the dissection display tree.
     -- A call to tree:add() returns the child created, so we can add more "under" it using that return value.
@@ -547,18 +561,27 @@ function zk_tcp.dissector(tvbuf, pktinfo, root)
         dprint("packet length",pktlen,"too short")
         return
     end
-    dprint2("zk_tcp.dissector returning", pktlen)
-    tree:add_le(pf_machine1, tvbuf:range(0,2))
-    tree:add_le(pf_machine2, tvbuf:range(2,2))
-    tree:add_le(pf_length, tvbuf:range(4,4))
     -- tell wireshark how much of tvbuff we dissected
-    if pktlen > ZK_HDR_LEN then
-        remain = pktlen - ZK_HDR_LEN
-		-- zk_tree  = tree:add(zk, tvbuf:range(8, remain))
-		zk.dissector(tvbuf:range(8,remain):tvb(), pktinfo, tree)
-	end
-	-- set the protocol column to show our protocol name
-    pktinfo.cols.protocol:set("ZK8")
+    dprint2("zk_tcp.dissector returning", pktlen)
+    local machine1 = tvbuf:range(0,2):le_uint()
+    local machine2 = tvbuf:range(2,2):le_uint()
+
+    if (machine1 == 20560) and (machine2 == 32130) then
+        local tcp_length = tvbuf:range(4,4):le_uint64()
+        tree:add_le(pf_machine1, tvbuf:range(0,2))
+        tree:add_le(pf_machine2, tvbuf:range(2,2))
+        tree:add_le(pf_length, tvbuf:range(4,4))
+        if pktlen > ZK_HDR_LEN then
+            remain = pktlen - ZK_HDR_LEN
+            -- zk_tree  = tree:add(zk, tvbuf:range(8, remain))
+            zk.dissector(tvbuf:range(8,remain):tvb(), pktinfo, tree)
+        end
+        -- set the protocol column to show our protocol name
+        pktinfo.cols.protocol:set("ZK8")
+    else
+        pktinfo.cols.protocol:set("ZK8")
+        pktinfo.cols.info:set("--- data " .. pktlen .. " Bytes")
+    end
     return pktlen
 end
 

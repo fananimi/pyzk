@@ -910,7 +910,7 @@ class ZK(object):
                 return False
             uid = users[0].uid
         for _retries in range(3):
-            command = 88 # comando secreto!!!
+            command = 88 # comando secreto!!! GET_USER_TEMPLATE
             command_string = pack('hb', uid, temp_id)
             response_size = 1024 + 8
             cmd_response = self.__send_command(command, command_string, response_size)
@@ -946,7 +946,7 @@ class ZK(object):
                     print ("Incorrect tcp packet")
                     return None
                 recieved = len(data_recv)
-                if self.verbose: print ("recieved {}, size {} rec {}".format(recieved, size, data_recv.encode('hex')))
+                if self.verbose: print ("recieved {}, size {} rec {}".format(recieved, size, data_recv.encode('hex')))  #todo python3
                 tcp_length = unpack('HHI', data_recv[:8])[2] #bytes+8
                 if tcp_length < (bytes + 8):
                     if self.verbose: print ("request chunk too big!")
@@ -1313,7 +1313,7 @@ class ZK(object):
         if self.__response == const.CMD_DATA: # less than 1024!!!
             if self.verbose: print ("size was {} len is {}".format(size, len(self.__data)))
             return self.__data #without headers
-        elif self.__response== const.CMD_PREPARE_DATA:
+        elif self.__response == const.CMD_PREPARE_DATA:
             data = []
             size = self.__get_data_size()
             if self.verbose: print ("recieve chunk:data size is", size)
@@ -1328,7 +1328,7 @@ class ZK(object):
                 if tcp_length < (size + 8):
                     if self.verbose: print ("request chunk too big!")
                 response = unpack('HHHH', data_recv[8:16])[0]
-                if recieved >= (size + 32): #complete
+                if recieved >= (size + 32): #complete with ACK_OK included
                     if response == const.CMD_DATA:
                         resp = data_recv[16 : size + 16] # no ack?
                         if self.verbose: print ("resp complete len", len(resp))
@@ -1337,20 +1337,26 @@ class ZK(object):
                         if self.verbose: print("broken packet!!! {}".format(response))
                         return None #broken
                 else: # incomplete
-                    if self.verbose: print ("try incomplete")
-                    data.append(data_recv[16:]) # w/o tcp and header
-                    size -= recieved-16
+                    if self.verbose: print ("try incomplete (actual valid {})".format(recieved-16))
+                    data.append(data_recv[16 : size+ 16 ]) # w/o DATA tcp and header
+                    size -= recieved-16 # w/o DATA tcp and header
+                    broken_header = b""
+                    if size < 0: #broken ack header?
+                        broken_header = data_recv[size:]
+                        if self.verbose: print ("broken", (broken_header).encode('hex')) #TODO python3
                     while size>0: #jic
+                        if self.verbose: print ("still need {}".format(size))
                         data_recv = self.__sock.recv(size) #ideal limit?
                         recieved = len(data_recv)
                         if self.verbose: print ("partial recv {}".format(recieved))
                         data.append(data_recv) # w/o tcp and header
                         size -= recieved
                     #get cmd_ack_ok
-                    data_recv = self.__sock.recv(16)
+                    data_recv = broken_header + self.__sock.recv(16)
                     #could be broken
                     if len(data_recv) < 16:
-                        print ("trying to complete broken ACK")
+                        print ("trying to complete broken ACK %s /16" % len(data_recv))
+                        if self.verbose: print (data_recv.encode('hex')) #todo python3
                         data_recv += self.__sock.recv(16 - len(data_recv)) #TODO: CHECK HERE_!
                     if not self.__test_tcp_top(data_recv):
                         if self.verbose: print ("invalid tcp ACK OK")

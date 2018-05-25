@@ -88,7 +88,10 @@ try:
     print (conn)
     print ('')
     print ('--- Get User ---')
+    inicio = time.time()
     users = conn.get_users()
+    final = time.time()
+    print ('    took {:.3f}[s]'.format(final - inicio))
     max_uid = 0
     prev = None
     if not args.deleteuser:
@@ -119,6 +122,7 @@ try:
             #print ''
             if args.adduser and user.uid == args.adduser:
                 prev = user
+    print ('    took {:.3f}[s]'.format(final - inicio))
 
     if args.adduser:
         uid = int(args.adduser)
@@ -167,7 +171,11 @@ try:
     #conn.test_voice(10)
     if args.templates:
         print ("Read Templates...")
+        inicio = time.time()
         templates = conn.get_templates()
+        final = time.time()
+        print ('    took {:.3f}[s]'.format(final - inicio))
+        print ('now checking individually...')
         for tem in templates:
             tem2 =conn.get_user_template(tem.uid,tem.fid)
             if tem2 is None:
@@ -177,13 +185,18 @@ try:
             else:
                 print ("dif-1 %s" % tem)
                 print ("dif-2 %s" % tem2)
+        print ('    took {:.3f}[s]'.format(final - inicio))
     if args.records:
         print ("Read Records...")
+        inicio = time.time()
         attendance = conn.get_attendance()
+        final = time.time()
+        print ('    took {:.3f}[s]'.format(final - inicio))
         i = 0
         for att in attendance:
             i +=1
             print ("ATT {:>6}: uid:{:>3}, user_id:{:>8} t: {}, s:{}".format(i, att.uid, att.user_id, att.timestamp, att.status))
+        print ('    took {:.3f}[s]'.format(final - inicio))
     print ('')
     print ('--- sizes & capacity ---')
     conn.read_sizes()
