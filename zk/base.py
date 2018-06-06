@@ -1420,7 +1420,10 @@ class ZK(object):
         for _retries in range(3):
             command = 1504 #CMD_READ_BUFFER
             command_string = pack('<ii', start, size)
-            response_size = 1024 + 8
+            if self.tcp:
+                response_size = size + 32
+            else:
+                response_size = 1024 + 8
             cmd_response = self.__send_command(command, command_string, response_size)
             data = self.__recieve_chunk()
             if data is not None:
