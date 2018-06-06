@@ -39,6 +39,8 @@ parser.add_argument('-u', '--updatetime', action="store_true",
                     help='Update Date/Time')
 parser.add_argument('-l', '--live-capture', action="store_true",
                     help='Live Event Capture')
+parser.add_argument('-o', '--open-door', action="store_true",
+                    help='Open door')
 parser.add_argument('-D', '--deleteuser', type=int,
                     help='Delete a User (uid)', default=0)
 parser.add_argument('-A', '--adduser', type=int,
@@ -201,6 +203,11 @@ try:
     print ('--- sizes & capacity ---')
     conn.read_sizes()
     print (conn)
+    if args.open_door:
+        print ('')
+        print ('--- Opening door 10s ---')
+        conn.unlock(10)
+        print (' -- done!---')
     if args.live_capture:
         print ('')
         print ('--- Live Capture! (press ctrl+C to break) ---')

@@ -21,7 +21,7 @@ Just create a ZK object and you will be ready to call api.
 from zk import ZK, const
 
 conn = None
-zk = ZK('192.168.1.201', port=4370, timeout=5)
+zk = ZK('192.168.1.201', port=4370, timeout=5, password=0, force_udp=False, ommit_ping=False)
 try:
     print ('Connecting to device ...')
     conn = zk.connect()
@@ -207,6 +207,8 @@ optional arguments:
   -r, --records         Get attendance records
   -u, --updatetime      Update Date/Time
   -l, --live-capture    Live Event Capture
+-o, --open-door       Open door
+
   -D DELETEUSER, --deleteuser DELETEUSER
                         Delete a User (uid)
   -A ADDUSER, --adduser ADDUSER
@@ -219,9 +221,7 @@ optional arguments:
 
 ```
 
-
-
-# Related Project (TODO: chekc compatibility)
+# Related Project (TODO: check compatibility)
 
 * [zkcluster](https://github.com/fananimi/zkcluster/ "zkcluster project") is a django apps to manage multiple fingerprint devices.
 

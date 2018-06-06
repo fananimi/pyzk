@@ -600,6 +600,20 @@ class ZK(object):
         else:
             raise ZKErrorResponse("can't read sizes")
 
+    def unlock(self, time=3):
+        '''
+        :param time: define time in seconds
+        :return:
+        thanks to https://github.com/SoftwareHouseMerida/pyzk/
+        '''
+        command = const.CMD_UNLOCK
+        command_string = pack("I",int(time)*10)
+        cmd_response = self.__send_command(command, command_string)
+        if cmd_response.get('status'):
+            return True
+        else:
+            raise ZKErrorResponse("can't open door")
+
     def __str__(self):
         """ for debug"""
         return "ZK %s://%s:%s users[%i]:%i/%i fingers:%i/%i, records:%i/%i faces:%i/%i" % (
@@ -1328,7 +1342,10 @@ class ZK(object):
             size = self.__get_data_size()
             if self.verbose: print ("recieve chunk:data size is", size)
             if self.tcp:
-                data_recv = self.__sock.recv(size + 32)
+                if len(self.__data)>=(8+size): #prepare data with actual data! should be 8+size+32
+                    data_recv = self.__data[8:] # test, maybe -32
+                else:
+                    data_recv = self.__sock.recv(size + 32)
                 tcp_length = self.__test_tcp_top(data_recv)
                 if tcp_length == 0:
                     print ("Incorrect tcp packet")
