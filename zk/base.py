@@ -387,7 +387,7 @@ class ZK(object):
         response_size = 1024
         cmd_response = self.__send_command(command, command_string, response_size)
         if cmd_response.get('status'):
-            serialnumber = self.__data.split(b'=')[-1].split(b'\x00')[0]
+            serialnumber = self.__data.split(b'=', 1)[-1].split(b'\x00')[0]
             return serialnumber.decode() # string?
         else:
             raise ZKErrorResponse("can't read serial number")
@@ -402,7 +402,7 @@ class ZK(object):
 
         cmd_response = self.__send_command(command, command_string, response_size)
         if cmd_response.get('status'):
-            platform = self.__data.split(b'=')[-1].split(b'\x00')[0]
+            platform = self.__data.split(b'=', 1)[-1].split(b'\x00')[0]
             return platform.decode()
         else:
             raise ZKErrorResponse("can't get platform")
@@ -417,7 +417,7 @@ class ZK(object):
 
         cmd_response = self.__send_command(command, command_string, response_size)
         if cmd_response.get('status'):
-            mac = self.__data.split(b'=')[-1].split(b'\x00')[0]
+            mac = self.__data.split(b'=', 1)[-1].split(b'\x00')[0]
             return mac.decode()
         else:
             raise ZKErrorResponse("can't get mac")
@@ -432,7 +432,7 @@ class ZK(object):
 
         cmd_response = self.__send_command(command, command_string, response_size)
         if cmd_response.get('status'):
-            device = self.__data.split(b'=')[-1].split(b'\x00')[0]
+            device = self.__data.split(b'=', 1)[-1].split(b'\x00')[0]
             return device.decode()
         else:
             return "" #no name
@@ -448,7 +448,7 @@ class ZK(object):
 
         cmd_response = self.__send_command(command, command_string, response_size)
         if cmd_response.get('status'):
-            response = self.__data.split(b'=')[-1].split(b'\x00')[0]
+            response = self.__data.split(b'=', 1)[-1].split(b'\x00')[0]
             return int(response)  if response else 0
         else:
             return None
@@ -463,7 +463,7 @@ class ZK(object):
 
         cmd_response = self.__send_command(command, command_string, response_size)
         if cmd_response.get('status'):
-            response = self.__data.split(b'=')[-1].split(b'\x00')[0]
+            response = self.__data.split(b'=', 1)[-1].split(b'\x00')[0]
             return int(response) if response else 0
         else:
             return None
@@ -478,7 +478,7 @@ class ZK(object):
 
         cmd_response = self.__send_command(command, command_string, response_size)
         if cmd_response.get('status'):
-            fmt = (self.__data.split(b'=')[-1].split(b'\x00')[0])
+            fmt = (self.__data.split(b'=', 1)[-1].split(b'\x00')[0])
             #definitivo? seleccionar firmware aqui?
             return int(fmt) if fmt else 0
         else:
@@ -494,7 +494,7 @@ class ZK(object):
 
         cmd_response = self.__send_command(command, command_string, response_size)
         if cmd_response.get('status'):
-            fmt = (self.__data.split(b'=')[-1].split(b'\x00')[0])
+            fmt = (self.__data.split(b'=', 1)[-1].split(b'\x00')[0])
             #definitivo? seleccionar firmware aqui?
             return int(fmt) if fmt else 0
         else:
@@ -510,7 +510,7 @@ class ZK(object):
 
         cmd_response = self.__send_command(command, command_string, response_size)
         if cmd_response.get('status'):
-            response = (self.__data.split(b'=')[-1].split(b'\x00')[0])
+            response = (self.__data.split(b'=', 1)[-1].split(b'\x00')[0])
             #definitivo? seleccionar firmware aqui?
             return int(response) if response else 0
         else:
@@ -526,7 +526,7 @@ class ZK(object):
 
         cmd_response = self.__send_command(command, command_string, response_size)
         if cmd_response.get('status'):
-            response = (self.__data.split(b'=')[-1].split(b'\x00')[0])
+            response = (self.__data.split(b'=', 1)[-1].split(b'\x00')[0])
             #definitivo? seleccionar firmware aqui?
             return int(response) if response else 0
         else:
@@ -538,13 +538,13 @@ class ZK(object):
         gate = b''
         cmd_response = self.__send_command(const.CMD_OPTIONS_RRQ, b'IPAddress', 1024)
         if cmd_response.get('status'):
-            ip = (self.__data.split(b'=')[-1].split(b'\x00')[0])
+            ip = (self.__data.split(b'=', 1)[-1].split(b'\x00')[0])
         cmd_response = self.__send_command(const.CMD_OPTIONS_RRQ, b'NetMask', 1024)
         if cmd_response.get('status'):
-            mask = (self.__data.split(b'=')[-1].split(b'\x00')[0])
+            mask = (self.__data.split(b'=', 1)[-1].split(b'\x00')[0])
         cmd_response = self.__send_command(const.CMD_OPTIONS_RRQ, b'GATEIPAddress', 1024)
         if cmd_response.get('status'):
-            gate = (self.__data.split(b'=')[-1].split(b'\x00')[0])
+            gate = (self.__data.split(b'=', 1)[-1].split(b'\x00')[0])
         return {'ip': ip.decode(), 'mask': mask.decode(), 'gateway': gate.decode()}
 
     def get_pin_width(self):
