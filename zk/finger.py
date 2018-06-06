@@ -15,7 +15,7 @@ class Finger(object):
         return pack("HHbb%is" % (self.size), self.size+6, self.uid, self.fid, self.valid, self.template)
 
     def repack_only(self): #only template
-        return pack("H%is" % (self.size), self.size+2, self.template)
+        return pack("H%is" % (self.size), self.size, self.template)
     
     def __eq__(self, other): 
         return self.__dict__ == other.__dict__

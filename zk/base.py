@@ -576,11 +576,12 @@ class ZK(object):
         response_size = 1024
         cmd_response = self.__send_command(command,b'', response_size)
         if cmd_response.get('status'):
+            if self.verbose: print(codecs.encode(self.__data,'hex'))
             size = len(self.__data) 
             if size == 80:
                 fields = unpack('iiiiiiiiiiiiiiiiiiii', self.__data)
             else: #92?
-                fields = unpack('iiiiiiiiiiiiiiiiiiiiiii', self.__data)
+                fields = unpack('iiiiiiiiiiiiiiiiiiiiiii', self.__data[:92]) #dirty hack! we need more information
             self.users = fields[4]
             self.fingers = fields[6]
             self.records = fields[8]
@@ -851,9 +852,16 @@ class ZK(object):
         """
         Delete specific template
         for tcp via user_id:
-            command = 134 # unknown?
-            command_string = pack('<24sB', user_id, temp_id)    
         """
+        if self.tcp and user_id:
+            command = 134 # unknown?
+            command_string = pack('<24sB', str(user_id), temp_id)
+            cmd_response = self.__send_command(command, command_string)
+            #        users = list(filter(lambda x: x.uid==uid, users))
+            if cmd_response.get('status'):
+                return True #refres_data (1013)?
+            else:
+                return False # probably empty!
         if not uid:
             users = self.get_users()
             users = list(filter(lambda x: x.user_id==str(user_id), users))
@@ -896,6 +904,8 @@ class ZK(object):
         if not cmd_response.get('status'):
             raise ZKErrorResponse("can't delete user")
         self.refresh_data()
+        if uid == (self.next_uid - 1):
+            self.next_uid = uid # quick undo
 
     def get_user_template(self, uid, temp_id=0, user_id=''):
         """ ZKFinger VX10.0
