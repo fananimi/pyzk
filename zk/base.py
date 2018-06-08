@@ -12,6 +12,14 @@ from zk.exception import ZKErrorResponse, ZKNetworkError
 from zk.user import User
 from zk.finger import Finger
 
+def safe_cast(val, to_type, default=None):
+    #https://stackoverflow.com/questions/6330071/safe-casting-in-python
+    try:
+        return to_type(val)
+    except (ValueError, TypeError):
+        return default
+
+
 def make_commkey(key, session_id, ticks=50):
     """take a password and session_id and scramble them to send to the time
     clock.
@@ -449,7 +457,7 @@ class ZK(object):
         cmd_response = self.__send_command(command, command_string, response_size)
         if cmd_response.get('status'):
             response = self.__data.split(b'=', 1)[-1].split(b'\x00')[0]
-            return int(response)  if response else 0
+            return safe_cast(response, int, 0)  if response else 0
         else:
             return None
 
@@ -464,7 +472,7 @@ class ZK(object):
         cmd_response = self.__send_command(command, command_string, response_size)
         if cmd_response.get('status'):
             response = self.__data.split(b'=', 1)[-1].split(b'\x00')[0]
-            return int(response) if response else 0
+            return safe_cast(response, int, 0) if response else 0
         else:
             return None
 
@@ -480,7 +488,7 @@ class ZK(object):
         if cmd_response.get('status'):
             fmt = (self.__data.split(b'=', 1)[-1].split(b'\x00')[0])
             #definitivo? seleccionar firmware aqui?
-            return int(fmt) if fmt else 0
+            return safe_cast(fmt, int, 0) if fmt else 0
         else:
             raise ZKErrorResponse("can't read extend fmt")
 
@@ -496,7 +504,7 @@ class ZK(object):
         if cmd_response.get('status'):
             fmt = (self.__data.split(b'=', 1)[-1].split(b'\x00')[0])
             #definitivo? seleccionar firmware aqui?
-            return int(fmt) if fmt else 0
+            return safe_cast(fmt, int, 0) if fmt else 0
         else:
             return None
 
@@ -528,7 +536,7 @@ class ZK(object):
         if cmd_response.get('status'):
             response = (self.__data.split(b'=', 1)[-1].split(b'\x00')[0])
             #definitivo? seleccionar firmware aqui?
-            return int(response) if response else 0
+            return safe_cast(response, int, 0) if response else 0
         else:
             return None
 
