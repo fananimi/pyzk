@@ -197,7 +197,7 @@ try:
         i = 0
         for att in attendance:
             i +=1
-            print ("ATT {:>6}: uid:{:>3}, user_id:{:>8} t: {}, s:{}".format(i, att.uid, att.user_id, att.timestamp, att.status))
+            print ("ATT {:>6}: uid:{:>3}, user_id:{:>8} t: {}, s:{} p:{}".format(i, att.uid, att.user_id, att.timestamp, att.status, att.punch))
         print ('    took {:.3f}[s]'.format(final - inicio))
     print ('')
     print ('--- sizes & capacity ---')
@@ -217,7 +217,7 @@ try:
                 #counter += 1 #enable to implemet a poorman timeout
                 print ("timeout {}".format(counter))
             else:
-                print ("ATT {:>6}: uid:{:>3}, user_id:{:>8} t: {}, s:{}".format(counter, att.uid, att.user_id, att.timestamp, att.status))
+                print ("ATT {:>6}: uid:{:>3}, user_id:{:>8} t: {}, s:{} p:{}".format(counter, att.uid, att.user_id, att.timestamp, att.status, att.punch))
             if counter >= 10:
                 conn.end_live_capture = True
         print('')

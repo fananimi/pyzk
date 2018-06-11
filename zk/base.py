@@ -1292,8 +1292,8 @@ class ZK(object):
                 """if len (data) == 5:
                     
                     continue"""
-                if len(data) == 12: #class 1 attendance
-                    user_id, status, match, timehex = unpack('<IBB6s', data)
+                if len(data) == 12: #class 1 attendance #TODO: RETEST ZK6
+                    user_id, status, punch, timehex = unpack('<IBB6s', data)
                     user_id = str(user_id)
                     timestamp = self.__decode_timehex(timehex)
                     tuser = list(filter(lambda x: x.user_id == user_id, users))
@@ -1303,7 +1303,7 @@ class ZK(object):
                         uid = tuser[0].uid
                     yield Attendance(uid, user_id, timestamp, status)
                 elif len(data) == 36: #class 2 attendance
-                    user_id,  status, match, timehex, res = unpack('<24sBB6sI', data)
+                    user_id,  status, punch, timehex, res = unpack('<24sBB6sI', data)
                     user_id = (user_id.split(b'\x00')[0]).decode(errors='ignore')
                     timestamp = self.__decode_timehex(timehex)
                     tuser = list(filter(lambda x: x.user_id == user_id, users))
@@ -1311,7 +1311,7 @@ class ZK(object):
                         uid = int(user_id)
                     else:
                         uid = tuser[0].uid
-                    yield Attendance(uid, user_id, timestamp, status)
+                    yield Attendance(uid, user_id, timestamp, status, punch)
                 else:
                     if self.verbose: print (codecs.encode(data, 'hex')), len(data)
                     yield codecs.encode(data, 'hex')
@@ -1546,8 +1546,8 @@ class ZK(object):
         if self.verbose: print ("record_size is ", record_size)
         attendance_data = attendance_data[4:] #total size not used
         if record_size == 8 : #ultra old format
-            while len(attendance_data) >= 8:
-                uid, status, timestamp = unpack('HH4s', attendance_data.ljust(8, b'\x00')[:8])
+            while len(attendance_data) >= 8:#TODO RETEST ZK6!!!
+                uid, status, timestamp, punch = unpack('HB4sB', attendance_data.ljust(8, b'\x00')[:8])
                 if self.verbose: print (codecs.encode(attendance_data[:8], 'hex'))
                 attendance_data = attendance_data[8:]
                 tuser = list(filter(lambda x: x.uid == uid, users))
@@ -1559,8 +1559,8 @@ class ZK(object):
                 attendance = Attendance(uid, user_id, timestamp, status)
                 attendances.append(attendance)
         elif record_size == 16: # extended
-            while len(attendance_data) >= 16:
-                user_id, timestamp, status, verified, reserved, workcode = unpack('<I4sBB2sI', attendance_data.ljust(16, b'\x00')[:16])
+            while len(attendance_data) >= 16: #TODO RETEST ZK6
+                user_id, timestamp, status, punch, reserved, workcode = unpack('<I4sBB2sI', attendance_data.ljust(16, b'\x00')[:16])
                 user_id = str(user_id)
                 if self.verbose: print(codecs.encode(attendance_data[:16], 'hex'))
                 attendance_data = attendance_data[16:]
@@ -1577,17 +1577,17 @@ class ZK(object):
                 else:
                     uid = tuser[0].uid
                 timestamp = self.__decode_time(timestamp)
-                attendance = Attendance(uid, user_id, timestamp, status)
+                attendance = Attendance(uid, user_id, timestamp, status, punch)
                 attendances.append(attendance)
         else:
             while len(attendance_data) >= 40:
-                uid, user_id, sparator, timestamp, status, space = unpack('<H24sc4sB8s', attendance_data.ljust(40, b'\x00')[:40])
+                uid, user_id, status, timestamp, punch, space = unpack('<H24sB4sB8s', attendance_data.ljust(40, b'\x00')[:40])
                 if self.verbose: print (codecs.encode(attendance_data[:40], 'hex'))
                 user_id = (user_id.split(b'\x00')[0]).decode(errors='ignore')
                 timestamp = self.__decode_time(timestamp)
                 #status = int(status.encode("hex"), 16)
 
-                attendance = Attendance(uid, user_id, timestamp, status)
+                attendance = Attendance(uid, user_id, timestamp, status, punch)
                 attendances.append(attendance)
                 attendance_data = attendance_data[40:]
         return attendances
