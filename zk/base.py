@@ -1301,7 +1301,7 @@ class ZK(object):
                         uid = int(user_id)
                     else:
                         uid = tuser[0].uid
-                    yield Attendance(user_id, timestamp, status, uid=uid)#punch?
+                    yield Attendance(user_id, timestamp, status, punch, uid)#punch test?
                 elif len(data) == 36: #class 2 attendance
                     user_id,  status, punch, timehex, res = unpack('<24sBB6sI', data)
                     user_id = (user_id.split(b'\x00')[0]).decode(errors='ignore')
@@ -1556,7 +1556,7 @@ class ZK(object):
                 else:
                     user_id = tuser[0].user_id
                 timestamp = self.__decode_time(timestamp)
-                attendance = Attendance(user_id, timestamp, status, uid=uid) # punch?
+                attendance = Attendance(user_id, timestamp, status, punch, uid) # punch?
                 attendances.append(attendance)
         elif record_size == 16: # extended
             while len(attendance_data) >= 16: #TODO RETEST ZK6
