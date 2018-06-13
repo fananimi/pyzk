@@ -4,13 +4,26 @@ pyzk is an unofficial library of zksoftware the fingerprint attendance machine.
 
 # Installation
 
-[![Build Status](https://travis-ci.org/fananimi/pyzk.svg?branch=master)](https://travis-ci.org/fananimi/pyzk)
+[![Build Status](https://travis-ci.org/kurenai-ryu/pyzk.svg?branch=master)](https://travis-ci.org/kurenai-ryu/pyzk)
 
-`pip install pyzk`
+replace original pyzk, if it was installed
+`pip install -U git+https://github.com/kurenai-ryu/pyzk.git`
+
+or clone and execute:
+`python setup.py install`
+
+or in your project, append the path of this project
+
+```python
+import sys
+import os
+sys.path.insert(1,os.path.abspath("./pyzk"))
+from zk import ZK, const
+```
 
 # Documentation
 
-Complete documentation can be found at [Readthedocs](http://pyzk.readthedocs.io/en/latest/ "pyzk's readthedocs") .
+Complete documentation of the original project can be found at [Readthedocs](http://pyzk.readthedocs.io/en/latest/ "pyzk's readthedocs") .
 
 # Api Usage
 
@@ -207,7 +220,7 @@ optional arguments:
   -r, --records         Get attendance records
   -u, --updatetime      Update Date/Time
   -l, --live-capture    Live Event Capture
--o, --open-door       Open door
+  -o, --open-door       Open door
 
   -D DELETEUSER, --deleteuser DELETEUSER
                         Delete a User (uid)
