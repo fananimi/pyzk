@@ -1301,7 +1301,7 @@ class ZK(object):
                         uid = int(user_id)
                     else:
                         uid = tuser[0].uid
-                    yield Attendance(uid, user_id, timestamp, status)
+                    yield Attendance(user_id, timestamp, status, uid=uid)#punch?
                 elif len(data) == 36: #class 2 attendance
                     user_id,  status, punch, timehex, res = unpack('<24sBB6sI', data)
                     user_id = (user_id.split(b'\x00')[0]).decode(errors='ignore')
@@ -1311,7 +1311,7 @@ class ZK(object):
                         uid = int(user_id)
                     else:
                         uid = tuser[0].uid
-                    yield Attendance(uid, user_id, timestamp, status, punch)
+                    yield Attendance(user_id, timestamp, status, punch, uid)
                 else:
                     if self.verbose: print (codecs.encode(data, 'hex')), len(data)
                     yield codecs.encode(data, 'hex')
@@ -1556,7 +1556,7 @@ class ZK(object):
                 else:
                     user_id = tuser[0].user_id
                 timestamp = self.__decode_time(timestamp)
-                attendance = Attendance(uid, user_id, timestamp, status)
+                attendance = Attendance(user_id, timestamp, status, uid=uid) # punch?
                 attendances.append(attendance)
         elif record_size == 16: # extended
             while len(attendance_data) >= 16: #TODO RETEST ZK6
@@ -1577,7 +1577,7 @@ class ZK(object):
                 else:
                     uid = tuser[0].uid
                 timestamp = self.__decode_time(timestamp)
-                attendance = Attendance(uid, user_id, timestamp, status, punch)
+                attendance = Attendance(user_id, timestamp, status, punch, uid)
                 attendances.append(attendance)
         else:
             while len(attendance_data) >= 40:
@@ -1587,7 +1587,7 @@ class ZK(object):
                 timestamp = self.__decode_time(timestamp)
                 #status = int(status.encode("hex"), 16)
 
-                attendance = Attendance(uid, user_id, timestamp, status, punch)
+                attendance = Attendance(user_id, timestamp, status, punch, uid)
                 attendances.append(attendance)
                 attendance_data = attendance_data[40:]
         return attendances
