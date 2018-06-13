@@ -10,10 +10,10 @@ from builtins import input
 sys.path.append("zk")
 
 from zk import ZK, const
-from zk.attendance import Attendance
-from zk.exception import ZKErrorResponse, ZKNetworkError
 from zk.user import User
 from zk.finger import Finger
+from zk.attendance import Attendance
+from zk.exception import ZKErrorResponse, ZKNetworkError
 
 conn = None
 

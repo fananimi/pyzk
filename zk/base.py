@@ -70,8 +70,8 @@ class ZK_helper(object):
         """
         Returns True if host responds to a ping request
         """
+        print "ping"
         import subprocess, platform
-
         # Ping parameters as function of OS
         ping_str = "-n 1" if  platform.system().lower()=="windows" else "-c 1 -W 5"
         args = "ping " + " " + ping_str + " " + self.ip
@@ -202,7 +202,6 @@ class ZK(object):
         '''
         send command to the terminal
         '''
-
         buf = self.__create_header(command, command_string, self.__session_id, self.__reply_id)
         try:
             if self.tcp:
@@ -211,7 +210,7 @@ class ZK(object):
                 self.__tcp_data_recv = self.__sock.recv(response_size + 8)
                 self.__tcp_length = self.__test_tcp_top(self.__tcp_data_recv)
                 if self.__tcp_length == 0:
-                    raise ZKNetworkError("TCP Packet  invalid")    
+                    raise ZKNetworkError("TCP packet invalid")    
                 self.__header = unpack('<4H', self.__tcp_data_recv[8:16])
                 self.__data_recv = self.__tcp_data_recv[8:] # dirty hack
             else:
