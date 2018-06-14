@@ -70,7 +70,6 @@ class ZK_helper(object):
         """
         Returns True if host responds to a ping request
         """
-        print "ping"
         import subprocess, platform
         # Ping parameters as function of OS
         ping_str = "-n 1" if  platform.system().lower()=="windows" else "-c 1 -W 5"
