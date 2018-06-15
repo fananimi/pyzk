@@ -1341,7 +1341,7 @@ class ZK(object):
     def __recieve_chunk(self):
         """ recieve a chunk """
         if self.__response == const.CMD_DATA: # less than 1024!!!
-            if self.verbose: print ("size was {} len is {}".format(size, len(self.__data)))
+            if self.verbose: print ("_rc len is {}".format(len(self.__data)))
             return self.__data #without headers
         elif self.__response == const.CMD_PREPARE_DATA:
             data = []
