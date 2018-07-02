@@ -131,6 +131,10 @@ class ZK(object):
         self.__data_recv = None
         self.__data = None
 
+    def __nonzero__(self):
+        """ for boolean test"""
+        return self.is_connect
+
     def __create_socket(self):
         """ based on self.tcp"""
         if self.tcp:
@@ -342,9 +346,9 @@ class ZK(object):
         '''
         diconnect from the connected device
         '''
+        self.is_connect = False
         cmd_response = self.__send_command(const.CMD_EXIT)
         if cmd_response.get('status'):
-            self.is_connect = False
             if self.__sock:
                 self.__sock.close() #leave to GC
             return True
