@@ -4,9 +4,9 @@ import codecs
 class Finger(object):
     def __init__(self, uid, fid, valid, template):
         self.size = len(template) # template only
-        self.uid = uid
-        self.fid = fid
-        self.valid = valid
+        self.uid = int(uid)
+        self.fid = int(fid)
+        self.valid = int(valid)
         self.template = template
         #self.mark = str().encode("hex")
         self.mark = codecs.encode(template[:8], 'hex') + b'...' + codecs.encode(template[-8:], 'hex')
