@@ -514,3 +514,17 @@ class ZK(object):
             return True
         else:
             raise ZKErrorResponse("Invalid response")
+
+    def set_time(self, time):
+        """Set the time on the machine"""
+        command = const.CMD_SET_TIME
+        command_string = ''
+        response_size = 8
+        chksum = 0
+        session_id = self.__sesion_id
+        reply_id = self.__reply_id
+        cmd_response = self.__send_command(command,command_string, chksum, session_id, reply_id, response_size)
+        if cmd_response.get('status'):
+            return True
+        else:
+            raise ZKErrorResponse("Invalid response")
