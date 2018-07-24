@@ -234,7 +234,71 @@ optional arguments:
 
 ```
 
-# Related Project (TODO: check compatibility)
+# Compatible devices
+
+```
+Firmware Version : Ver 6.21 Nov 19 2008
+Platform : ZEM500
+DeviceName : U580
+
+Firmware Version : Ver 6.60 Oct 29 2012
+Platform : ZEM800_TFT
+DeviceName : iFace402/ID
+
+Firmware Version : Ver 6.60 Dec 27 2014
+Platform : ZEM600_TFT
+DeviceName : iFace800/ID
+
+Firmware Version : Ver 6.60 Mar 18 2013
+Platform : ZEM560
+DeviceName : MA300
+
+Firmware Version : Ver 6.60 Dec 1 2010
+Platform : ZEM510_TFT
+DeviceName : T4-C
+
+Firmware Version : Ver 6.60 Apr 9 2010
+Platform : ZEM510_TFT
+DeviceName : T4-C
+
+Firmware Version : Ver 6.60 Mar 18 2011
+Platform : ZEM600_TFT
+DeviceName : iClock260
+
+Firmware Version : Ver 6.60 Nov 6 2017 (remote tested with correct results)
+Platform : ZMM220_TFT
+DeviceName : (unknown device) (broken info but at least the important data was read)
+```
+
+
+
+### Latest tested (not really confirmed)
+
+```
+Firmware Version : Ver 6.60 Jun 16 2015
+Platform : JZ4725_TFT
+DeviceName : iClock260
+
+Firmware Version : Ver 6.60 Jun 16 2015
+Platform : JZ4725_TFT
+DeviceName : K14 (not tested, but same behavior like the other one)
+```
+
+
+
+### Not Working (needs more tests, more information)
+
+```
+Firmware Version : Ver 6.4.1 (build 99) (display version 2012-08-31)
+Platform : 
+DeviceName : iClock260 (no capture data - probably similar problem as the latest TESTED)
+```
+
+If you have another version tested and it worked, please inform me to update this list!
+
+
+
+# Related Project (TODO: check compatibility with this fork)
 
 * [zkcluster](https://github.com/fananimi/zkcluster/ "zkcluster project") is a django apps to manage multiple fingerprint devices.
 

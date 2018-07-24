@@ -15,6 +15,9 @@ from zk.finger import Finger
 from zk.attendance import Attendance
 from zk.exception import ZKErrorResponse, ZKNetworkError
 
+class BasicException(Exception):
+    pass
+
 conn = None
 
 
@@ -27,6 +30,8 @@ parser.add_argument('-T', '--timeout', type=int,
                     help='Default [10] seconds (0: disable timeout)', default=1)
 parser.add_argument('-P', '--password', type=int,
                     help='Device code/password', default=0)
+parser.add_argument('-b', '--basic', action="store_true",
+                    help='display Basic Information (no buld read, ie: users)')
 parser.add_argument('-f', '--force-udp', action="store_true",
                     help='Force UDP communication')
 parser.add_argument('-v', '--verbose', action="store_true",
@@ -89,6 +94,8 @@ try:
     conn.read_sizes()
     print (conn)
     print ('')
+    if args.basic:
+        raise BasicException("Basic Info... Done!")
     print ('--- Get User ---')
     inicio = time.time()
     users = conn.get_users()
@@ -223,6 +230,8 @@ try:
         print('')
         print('--- capture End!---')
     print ('')
+except BasicException as e:
+    print (e)
 except Exception as e:
     print ("Process terminate : {}".format(e))
     print ("Error: %s" % sys.exc_info()[0])
