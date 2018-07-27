@@ -188,9 +188,11 @@ for attendance in conn.live_capture():
         pass
     else:
         print (attendance) # Attendance object
+    #
     #if you need to break gracefully just set
     #   conn.end_live_capture = True
-    # on interactive mode,
+    #
+    # On interactive mode,
     # use Ctrl+C to break gracefully
     # this way it restores timeout
     # and disables live capture
@@ -214,9 +216,11 @@ optional arguments:
                         Default [10] seconds (0: disable timeout)
   -P PASSWORD, --password PASSWORD
                         Device code/password
+  -b, --basic           get Basic Information only. (no bulk read, ie: users)
   -f, --force-udp       Force UDP communication
   -v, --verbose         Print debug information
-  -t, --templates       Get templates / fingers
+  -t, --templates       Get templates / fingers (compare bulk and single read)
+  -tr, --templates-raw  Get raw templates (dump templates)
   -r, --records         Get attendance records
   -u, --updatetime      Update Date/Time
   -l, --live-capture    Live Event Capture
@@ -307,7 +311,7 @@ If you have another version tested and it worked, please inform me to update thi
 # Todo
 
 * Create better documentation
-* Finger template downloader & uploader
+* ~~Finger template downloader & uploader~~
 * HTTP Rest api
-* Create real time api (if possible)
+* ~~Create real time api (if possible)~~
 * and much more ...
