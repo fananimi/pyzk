@@ -94,7 +94,7 @@ class ZK_helper(object):
 
 class ZK(object):
     """ Clase ZK """
-    def __init__(self, ip, port=4370, timeout=60, password=0, force_udp=False, ommit_ping=False, verbose=False):
+    def __init__(self, ip, port=4370, timeout=60, password=0, force_udp=False, ommit_ping=False, verbose=False, encoding='UTF-8'):
         """ initialize instance """
         self.is_connect = False
         self.is_enabled = True #let's asume
@@ -108,6 +108,7 @@ class ZK(object):
         self.force_udp = force_udp
         self.ommit_ping = ommit_ping
         self.verbose = verbose
+        self.encoding = encoding
         self.tcp = False
         self.users = 0
         self.fingers = 0
@@ -194,7 +195,7 @@ class ZK(object):
 
     def __test_tcp_top(self, packet):
         """ return size!"""
-        if len(packet)<=8: 
+        if len(packet)<=8:
             return 0 # invalid packet
         tcp_header = unpack('<HHI', packet[:8])
         if tcp_header[0] == const.MACHINE_PREPARE_DATA_1 and tcp_header[1] == const.MACHINE_PREPARE_DATA_2:
@@ -213,7 +214,7 @@ class ZK(object):
                 self.__tcp_data_recv = self.__sock.recv(response_size + 8)
                 self.__tcp_length = self.__test_tcp_top(self.__tcp_data_recv)
                 if self.__tcp_length == 0:
-                    raise ZKNetworkError("TCP packet invalid")    
+                    raise ZKNetworkError("TCP packet invalid")
                 self.__header = unpack('<4H', self.__tcp_data_recv[8:16])
                 self.__data_recv = self.__tcp_data_recv[8:] # dirty hack
             else:
@@ -338,7 +339,7 @@ class ZK(object):
             return self
         else:
             if cmd_response["code"] == const.CMD_ACK_UNAUTH:
-                raise ZKErrorResponse("Unauthenticated")    
+                raise ZKErrorResponse("Unauthenticated")
             if self.verbose: print ("connect err response {} ".format(cmd_response["code"]))
             raise ZKErrorResponse("Invalid response: Can't connect")
 
@@ -398,13 +399,14 @@ class ZK(object):
         cmd_response = self.__send_command(command, command_string, response_size)
         if cmd_response.get('status'):
             serialnumber = self.__data.split(b'=', 1)[-1].split(b'\x00')[0]
+            serialnumber = serialnumber.replace(b'=', b'')
             return serialnumber.decode() # string?
         else:
-            raise ZKErrorResponse("can't read serial number")
+            raise ZKErrorResponse("Can't read serial number")
 
     def get_platform(self):
         '''
-        return the serial number
+        return the platform name
         '''
         command = const.CMD_OPTIONS_RRQ
         command_string = b'~Platform'
@@ -413,13 +415,14 @@ class ZK(object):
         cmd_response = self.__send_command(command, command_string, response_size)
         if cmd_response.get('status'):
             platform = self.__data.split(b'=', 1)[-1].split(b'\x00')[0]
+            platform = platform.replace(b'=', b'')
             return platform.decode()
         else:
-            raise ZKErrorResponse("can't get platform")
+            raise ZKErrorResponse("Can't get platform")
 
     def get_mac(self):
         '''
-        return the serial number
+        return the mac
         '''
         command = const.CMD_OPTIONS_RRQ
         command_string = b'MAC'
@@ -434,7 +437,7 @@ class ZK(object):
 
     def get_device_name(self):
         '''
-        return the serial number
+        return the device name
         '''
         command = const.CMD_OPTIONS_RRQ
         command_string = b'~DeviceName'
@@ -474,6 +477,7 @@ class ZK(object):
         cmd_response = self.__send_command(command, command_string, response_size)
         if cmd_response.get('status'):
             response = self.__data.split(b'=', 1)[-1].split(b'\x00')[0]
+            response = response.replace(b'=', b'')
             return safe_cast(response, int, 0) if response else 0
         else:
             return None
@@ -492,7 +496,7 @@ class ZK(object):
             #definitivo? seleccionar firmware aqui?
             return safe_cast(fmt, int, 0) if fmt else 0
         else:
-            raise ZKErrorResponse("can't read extend fmt")
+            raise ZKErrorResponse("Can't read extend fmt")
 
     def get_user_extend_fmt(self):
         '''
@@ -622,7 +626,7 @@ class ZK(object):
         if cmd_response.get('status'):
             return True
         else:
-            raise ZKErrorResponse("can't open door")
+            raise ZKErrorResponse("Can't open door")
 
     def __str__(self):
         """ for debug"""
@@ -664,7 +668,7 @@ class ZK(object):
             return True
         else:
             raise ZKErrorResponse("can't set time")
-        
+
     def poweroff(self):
         '''
         shutdown the device
@@ -784,25 +788,25 @@ class ZK(object):
             if not group_id:
                 group_id = 0
             try:
-                command_string = pack('HB5s8sIxBHI', uid, privilege, password.encode(), name.encode(), card, int(group_id), 0, int(user_id))
+                command_string = pack('HB5s8sIxBHI', uid, privilege, password.encode(self.encoding, errors='ignore'), name.encode(self.encoding, errors='ignore'), card, int(group_id), 0, int(user_id))
             except Exception as e:
                 if self.verbose: print("s_h Error pack: %s" % e)
                 if self.verbose: print("Error pack: %s" % sys.exc_info()[0])
-                raise ZKErrorResponse("Cant pack user")
+                raise ZKErrorResponse("Can't pack user")
         else:
-            name_pad = name.encode().ljust(24, b'\x00')[:24]
+            name_pad = name.encode(self.encoding, errors='ignore').ljust(24, b'\x00')[:24]
             card_str = pack('i', int(card))[:4]
-            command_string = pack('HB8s24s4sx7sx24s', uid, privilege, password.encode(), name_pad, card_str, group_id.encode(), user_id.encode())
+            command_string = pack('HB8s24s4sx7sx24s', uid, privilege, password.encode(self.encoding, errors='ignore'), name_pad, card_str, group_id.encode(), user_id.encode())
         response_size = 1024 #TODO check response?
         cmd_response = self.__send_command(command, command_string, response_size)
         if not cmd_response.get('status'):
-            raise ZKErrorResponse("Cant set user")
+            raise ZKErrorResponse("Can't set user")
         self.refresh_data()
         if self.next_uid == uid:
             self.next_uid += 1 # better recalculate again
         if self.next_user_id == user_id:
             self.next_user_id = str(self.next_uid)
-        
+
     def save_user_template(self, user, fingers=[]):
         """ save user and template """
         #TODO: grabado global
@@ -818,7 +822,7 @@ class ZK(object):
                 if len(tusers) == 1:
                     user = tusers[0]
                 else:
-                    raise ZKErrorResponse("Cant find user")
+                    raise ZKErrorResponse("Can't find user")
         if isinstance(fingers, Finger):
             fingers = [fingers]
         fpack = ""
@@ -841,7 +845,7 @@ class ZK(object):
         command_string = pack('<IHH', 12,0,8) # ??? write? WRQ user data?
         cmd_response = self.__send_command(command, command_string)
         if not cmd_response.get('status'):
-            raise ZKErrorResponse("Cant save utemp")
+            raise ZKErrorResponse("Can't save utemp")
         self.refresh_data()
 
     def _send_with_buffer(self, buffer):
@@ -854,7 +858,7 @@ class ZK(object):
         command_string = pack('I', size)
         cmd_response = self.__send_command(command, command_string)
         if not cmd_response.get('status'):
-            raise ZKErrorResponse("Cant prepare data")
+            raise ZKErrorResponse("Can't prepare data")
         remain = size % MAX_CHUNK
         packets = (size - remain) // MAX_CHUNK
         start = 0
@@ -870,7 +874,7 @@ class ZK(object):
         if cmd_response.get('status'):
             return True #refres_data (1013)?
         else:
-            raise ZKErrorResponse("Cant send chunk")
+            raise ZKErrorResponse("Can't send chunk")
 
     def delete_user_template(self, uid=0, temp_id=0, user_id=''):
         """
@@ -914,7 +918,7 @@ class ZK(object):
                 else: #double? posibly empty
                     return False #can't enrool
             command = 133 #const.CMD_DELETE_USER_2
-            command_string = pack('24s',str(user_id)) 
+            command_string = pack('24s',str(user_id))
         else:"""
         if not uid:
             users = self.get_users()
@@ -926,7 +930,7 @@ class ZK(object):
         command_string = pack('h', uid)
         cmd_response = self.__send_command(command, command_string)
         if not cmd_response.get('status'):
-            raise ZKErrorResponse("can't delete user")
+            raise ZKErrorResponse("Can't delete user")
         self.refresh_data()
         if uid == (self.next_uid - 1):
             self.next_uid = uid # quick undo
@@ -935,7 +939,7 @@ class ZK(object):
         """ ZKFinger VX10.0
             for tcp:
             command = const.CMD_USERTEMP_RRQ (doesn't work always)
-            command_string = pack('hb', uid, temp_id) 
+            command_string = pack('hb', uid, temp_id)
         """
         if not uid:
             users = self.get_users()
@@ -956,7 +960,7 @@ class ZK(object):
                 return Finger(uid, temp_id, 1, resp)
             if self.verbose: print ("retry get_user_template")
         else:
-            if self.verbose: print ("can't read/find finger")
+            if self.verbose: print ("Can't read/find finger")
             return None
 
     def get_templates(self):
@@ -1004,12 +1008,12 @@ class ZK(object):
             while len(userdata) >= 28:
                 uid, privilege, password, name, card, group_id, timezone, user_id = unpack('<HB5s8sIxBhI',userdata.ljust(28, b'\x00')[:28])
                 if uid > max_uid: max_uid = uid
-                password = (password.split(b'\x00')[0]).decode(errors='ignore')
-                name = (name.split(b'\x00')[0]).decode(errors='ignore').strip()
+                password = (password.split(b'\x00')[0]).decode(self.encoding, errors='ignore')
+                name = (name.split(b'\x00')[0]).decode(self.encoding, errors='ignore').strip()
                 #card = unpack('I', card)[0] #or hex value?
                 group_id = str(group_id)
                 user_id = str(user_id)
-                #TODO: check card value and find in ver8                                
+                #TODO: check card value and find in ver8
                 if not name:
                     name = "NN-%s" % user_id
                 user = User(uid, name, privilege, password, group_id, user_id, card)
@@ -1023,10 +1027,10 @@ class ZK(object):
                 #u2 = int(uid[1].encode("hex"), 16)
                 #uid = u1 + (u2 * 256)
                 #privilege = int(privilege.encode("hex"), 16)
-                password = (password.split(b'\x00')[0]).decode(errors='ignore')
-                name = (name.split(b'\x00')[0]).decode(errors='ignore').strip()
-                group_id = (group_id.split(b'\x00')[0]).decode(errors='ignore').strip()
-                user_id = (user_id.split(b'\x00')[0]).decode(errors='ignore')
+                password = (password.split(b'\x00')[0]).decode(self.encoding, errors='ignore')
+                name = (name.split(b'\x00')[0]).decode(self.encoding, errors='ignore').strip()
+                group_id = (group_id.split(b'\x00')[0]).decode(self.encoding, errors='ignore').strip()
+                user_id = (user_id.split(b'\x00')[0]).decode(self.encoding, errors='ignore')
                 if uid > max_uid: max_uid = uid
                 #card = int(unpack('I', separator)[0])
                 if not name:
@@ -1074,7 +1078,7 @@ class ZK(object):
         cmd_response = self.__send_command(command, command_string)
         if not cmd_response.get('status'):
             raise ZKErrorResponse("cant' reg events %i" % flags)
-    
+
     def set_sdk_build_1(self):
         """ """
         command = const.CMD_OPTIONS_WRQ
@@ -1210,7 +1214,7 @@ class ZK(object):
                     if self.verbose: print ("empty")
                     continue
                 """if len (data) == 5:
-                    
+
                     continue"""
                 if len(data) == 12: #class 1 attendance #TODO: RETEST ZK6
                     user_id, status, punch, timehex = unpack('<IBB6s', data)
@@ -1263,7 +1267,7 @@ class ZK(object):
     def __recieve_tcp_data(self, data_recv, size):
         """ data_recv, raw tcp packet
          must analyze tcp_length
-         
+
          must return data, broken
          """
         data = []
@@ -1457,7 +1461,7 @@ class ZK(object):
                 if self.verbose: print (codecs.encode(attendance_data[:8], 'hex'))
                 attendance_data = attendance_data[8:]
                 tuser = list(filter(lambda x: x.uid == uid, users))
-                if not tuser: 
+                if not tuser:
                     user_id = str(uid) #TODO revisar pq
                 else:
                     user_id = tuser[0].user_id
@@ -1471,7 +1475,7 @@ class ZK(object):
                 if self.verbose: print(codecs.encode(attendance_data[:16], 'hex'))
                 attendance_data = attendance_data[16:]
                 tuser = list(filter(lambda x: x.user_id == user_id, users))
-                if not tuser: 
+                if not tuser:
                     if self.verbose: print("no uid {}", user_id)
                     uid = str(user_id)
                     tuser = list(filter(lambda x: x.uid == user_id, users)) # refix
@@ -1497,7 +1501,7 @@ class ZK(object):
                 attendances.append(attendance)
                 attendance_data = attendance_data[40:]
         return attendances
-    
+
 
     def clear_attendance(self):
         '''
