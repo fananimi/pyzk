@@ -140,9 +140,11 @@ class ZK(object):
         """ based on self.tcp"""
         if self.tcp:
             self.__sock = socket(AF_INET, SOCK_STREAM)
+            self.__sock.settimeout(self.__timeout)
             self.__sock.connect_ex(self.__address)
         else:
             self.__sock = socket(AF_INET, SOCK_DGRAM)
+            self.__sock.settimeout(self.__timeout)
 
     def __create_tcp_top(self, packet):
         """ witch the complete packet set top header """

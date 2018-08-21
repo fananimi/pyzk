@@ -7,10 +7,22 @@ pyzk is an unofficial library of zksoftware the fingerprint attendance machine.
 [![Build Status](https://travis-ci.org/kurenai-ryu/pyzk.svg?branch=master)](https://travis-ci.org/kurenai-ryu/pyzk)
 
 replace original pyzk, if it was installed
-`pip install -U git+https://github.com/kurenai-ryu/pyzk.git`
+
+```sh
+pip install -U git+https://github.com/kurenai-ryu/pyzk.git
+```
+
+or using pipenv:
+
+```sh
+pipenv install git+https://gith.com/kurenai-ryu/pyzk#egg=pyzk
+```
 
 or clone and execute:
-`python setup.py install`
+
+```sh
+python setup.py install
+```
 
 or in your project, append the path of this project
 
@@ -68,21 +80,21 @@ finally:
 
 * Connect/Disconnect
 
-```
+```python
 conn = zk.connect()
 conn.disconnect()
 ```
 
 * Disable/Enable Connected Device
 
-```
+```python
 conn.disable_device()
 conn.enable_device()
 ```
 
 * Get and Set Time
 
-```
+```python
 from datetime import datetime
 
 zktime = conn.get_time()
@@ -95,7 +107,7 @@ conn.set_time(newtime)
 
 * Ger Firmware Version and extra information
 
-```
+```python
 conn.get_firmware_version()
 conn.get_serialnumber()
 conn.get_platform()
@@ -235,7 +247,6 @@ optional arguments:
   -F FINGER, --finger FINGER
                         Finger for enroll (fid=0)
 
-
 ```
 
 # Compatible devices
@@ -288,8 +299,6 @@ Platform : JZ4725_TFT
 DeviceName : K14 (not tested, but same behavior like the other one)
 ```
 
-
-
 ### Not Working (needs more tests, more information)
 
 ```
@@ -299,8 +308,6 @@ DeviceName : iClock260 (no capture data - probably similar problem as the latest
 ```
 
 If you have another version tested and it worked, please inform me to update this list!
-
-
 
 # Related Project (TODO: check compatibility with this fork)
 
