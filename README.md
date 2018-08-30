@@ -309,9 +309,11 @@ DeviceName : iClock260 (no capture data - probably similar problem as the latest
 
 If you have another version tested and it worked, please inform me to update this list!
 
-# Related Project (TODO: check compatibility with this fork)
+# Related Project
 
-* [zkcluster](https://github.com/fananimi/zkcluster/ "zkcluster project") is a django apps to manage multiple fingerprint devices.
+* [zkcluster](https://github.com/kurenai-ryu/zkcluster/ "zkcluster project") is a django apps to manage multiple fingerprint devices. (Initial support form the [original project](https://github.com/fananimi/zkcluster/))
+
+# Related Project (TODO: check compatibility with this fork)
 
 * [Driji](https://github.com/fananimi/driji/ "Driji project") is an attendance apps based fingerprint for school
 

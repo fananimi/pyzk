@@ -973,7 +973,7 @@ class ZK(object):
             if self.verbose: print("WRN: no user data") # debug
             return []
         total_size = unpack('i', templatedata[0:4])[0]
-        print ("get template total size {}, size {} len {}".format(total_size, size, len(templatedata)))
+        if self.verbose: print ("get template total size {}, size {} len {}".format(total_size, size, len(templatedata)))
         templatedata = templatedata[4:] #total size not used
         # ZKFinger VX10.0 the only finger firmware tested
         while total_size:

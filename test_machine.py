@@ -21,14 +21,13 @@ class BasicException(Exception):
 
 conn = None
 
-
 parser = argparse.ArgumentParser(description='ZK Basic Reading Tests')
 parser.add_argument('-a', '--address', 
                     help='ZK device Address [192.168.1.201]', default='192.168.1.201')
 parser.add_argument('-p', '--port', type=int,
                     help='ZK device port [4370]', default=4370)
 parser.add_argument('-T', '--timeout', type=int,
-                    help='Default [10] seconds (0: disable timeout)', default=1)
+                    help='Default [10] seconds (0: disable timeout)', default=10)
 parser.add_argument('-P', '--password', type=int,
                     help='Device code/password', default=0)
 parser.add_argument('-b', '--basic', action="store_true",
@@ -246,6 +245,7 @@ try:
     print ('')
 except BasicException as e:
     print (e)
+    print ('')
 except Exception as e:
     print ("Process terminate : {}".format(e))
     print ("Error: %s" % sys.exc_info()[0])

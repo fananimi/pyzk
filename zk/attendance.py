@@ -8,7 +8,7 @@ class Attendance(object):
         self.punch = punch
 
     def __str__(self):
-        return '<Attendance>: {} : {}'.format(self.user_id, self.timestamp)
+        return '<Attendance>: {} : {} ({}, {})'.format(self.user_id, self.timestamp, self.status, self.punch)
 
     def __repr__(self):
-        return '<Attendance>: {} : {}'.format(self.user_id, self.timestamp)
+        return '<Attendance>: {} : {} ({}, {})'.format(self.user_id, self.timestamp,self.status, self.punch)
