@@ -1340,8 +1340,8 @@ class ZK(object):
                 if self.verbose: print ("_rc_DATA! is {} bytes, tcp length is {}".format(len(self.__data), self.__tcp_length))
                 if len(self.__data) < (self.__tcp_length - 8):
                     need = (self.__tcp_length - 8) - len(self.__data)
-                    more_data = self.__recieve_raw_data(need)
                     if self.verbose: print ("need more data: {}".format(need))
+                    more_data = self.__recieve_raw_data(need)
                     return b''.join([self.__data, more_data])
                 else: #enough data
                     if self.verbose: print ("Enough data")
@@ -1438,8 +1438,8 @@ class ZK(object):
                 if self.verbose: print ("DATA! is {} bytes, tcp length is {}".format(len(self.__data), self.__tcp_length))
                 if len(self.__data) < (self.__tcp_length - 8):
                     need = (self.__tcp_length - 8) - len(self.__data)
-                    more_data = self.__recieve_raw_data(need)
                     if self.verbose: print ("need more data: {}".format(need))
+                    more_data = self.__recieve_raw_data(need)
                     return b''.join([self.__data, more_data]), len(self.__data) + len(more_data)
                 else: #enough data
                     if self.verbose: print ("Enough data")
