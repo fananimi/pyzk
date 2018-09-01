@@ -283,6 +283,7 @@ DeviceName : iClock260
 Firmware Version : Ver 6.60 Nov 6 2017 (remote tested with correct results)
 Platform : ZMM220_TFT
 DeviceName : (unknown device) (broken info but at least the important data was read)
+
 ```
 
 
@@ -297,6 +298,10 @@ DeviceName : iClock260
 Firmware Version : Ver 6.60 Jun 16 2015
 Platform : JZ4725_TFT
 DeviceName : K14 (not tested, but same behavior like the other one)
+
+Firmware Version : Ver 6.60 Jun 9 2017
+Platform : JZ4725_TFT
+DeviceName : K20 (Active testing! latest fix)
 ```
 
 ### Not Working (needs more tests, more information)

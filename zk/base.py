@@ -1336,8 +1336,19 @@ class ZK(object):
     def __recieve_chunk(self):
         """ recieve a chunk """
         if self.__response == const.CMD_DATA: # less than 1024!!!
-            if self.verbose: print ("_rc len is {}".format(len(self.__data)))
-            return self.__data #without headers
+            if self.tcp: #MUST CHECK TCP SIZE
+                if self.verbose: print ("_rc_DATA! is {} bytes, tcp length is {}".format(len(self.__data), self.__tcp_length))
+                if len(self.__data) < (self.__tcp_length - 8):
+                    need = (self.__tcp_length - 8) - len(self.__data)
+                    more_data = self.__recieve_raw_data(need)
+                    if self.verbose: print ("need more data: {}".format(need))
+                    return b''.join([self.__data, more_data])
+                else: #enough data
+                    if self.verbose: print ("Enough data")
+                    return self.__data
+            else: #UDP
+                if self.verbose: print ("_rc len is {}".format(len(self.__data)))
+                return self.__data #without headers
         elif self.__response == const.CMD_PREPARE_DATA:
             data = []
             size = self.__get_data_size()
@@ -1423,8 +1434,20 @@ class ZK(object):
             raise ZKErrorResponse("RWB Not supported")
         if cmd_response['code'] == const.CMD_DATA:
             #direct!!! small!!!
-            size = len(self.__data)
-            return self.__data, size
+            if self.tcp: #MUST CHECK TCP SIZE
+                if self.verbose: print ("DATA! is {} bytes, tcp length is {}".format(len(self.__data), self.__tcp_length))
+                if len(self.__data) < (self.__tcp_length - 8):
+                    need = (self.__tcp_length - 8) - len(self.__data)
+                    more_data = self.__recieve_raw_data(need)
+                    if self.verbose: print ("need more data: {}".format(need))
+                    return b''.join([self.__data, more_data]), len(self.__data) + len(more_data)
+                else: #enough data
+                    if self.verbose: print ("Enough data")
+                    size = len(self.__data)
+                    return self.__data, size
+            else: #udp is direct
+                size = len(self.__data)
+                return self.__data, size
         #else ACK_OK with size
         size = unpack('I', self.__data[1:5])[0]  # extra info???
         if self.verbose: print ("size fill be %i" % size)
