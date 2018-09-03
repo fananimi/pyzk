@@ -38,6 +38,8 @@ parser.add_argument('-v', '--verbose', action="store_true",
                     help='Print debug information')
 parser.add_argument('-r', '--restore', action="store_true",
                     help='Restore from backup')
+parser.add_argument('-c', '--clear-attendance', action="store_true",
+                    help='On Restore, also clears the attendance [default keep attendance]')
 parser.add_argument('filename', nargs='?',
                     help='backup filename (default [serialnumber].bak)', default='')
 
@@ -106,6 +108,9 @@ try:
         conn.disable_device()
         print ('Erasing device...')
         conn.clear_data()
+        if args.clear_attendance:
+            print ('Clearing attendance too!')
+            conn.clear_attendance()
         print ('Restoring Data...')
         for u in data['users']:
             #look for Templates

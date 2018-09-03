@@ -249,6 +249,37 @@ optional arguments:
 
 ```
 
+Backup/Restore (Users and fingers only!!!) (WARNING! destructive test! do it at your own risk!)
+
+```sh
+usage: ./test_backup_restore.py [-h] [-a ADDRESS] [-p PORT] [-T TIMEOUT]
+                              [-P PASSWORD] [-f] [-v] [-r]
+                              [filename]
+
+ZK Basic Backup/Restore Tool
+
+positional arguments:
+  filename              backup filename (default [serialnumber].bak)
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -a ADDRESS, --address ADDRESS
+                        ZK device Address [192.168.1.201]
+  -p PORT, --port PORT  ZK device port [4370]
+  -T TIMEOUT, --timeout TIMEOUT
+                        Default [10] seconds (0: disable timeout)
+  -P PASSWORD, --password PASSWORD
+                        Device code/password
+  -f, --force-udp       Force UDP communication
+  -v, --verbose         Print debug information
+  -r, --restore         Restore from backup
+  -c, --clear-attendance
+                        On Restore, also clears the attendance [default keep
+                        attendance]
+```
+
+to restore on a different device, make sure to specify the `filename`. on restoring, it asks for the serial number of the destination device (to make sure it was correct, as it deletes all data) WARNING. there is no way to restore attendance data, you can keep it or clear it, but once cleared, there is no way to restore it. 
+
 # Compatible devices
 
 ```
