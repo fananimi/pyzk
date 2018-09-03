@@ -109,6 +109,7 @@ class ZK(object):
         self.ommit_ping = ommit_ping
         self.verbose = verbose
         self.encoding = encoding
+        User.encoding = encoding
         self.tcp = False
         self.users = 0
         self.fingers = 0
@@ -775,14 +776,18 @@ class ZK(object):
             return False #some devices doesn't support sound
             #raise ZKErrorResponse("can't test voice")
 
-    def set_user(self, uid, name, privilege=0, password='', group_id='', user_id='', card=0):
+    def set_user(self, uid=None, name='', privilege=0, password='', group_id='', user_id='', card=0):
         '''
         create or update user by uid
         '''
         command = const.CMD_USER_WRQ
+        if uid is None:
+            uid = self.next_uid # keeps uid=0
+            if not user_id:
+                user_id = self.next_user_id # else...
         if not user_id:
             user_id = str(uid) #ZK6 needs uid2 == uid
-        #uid = chr(uid % 256) + chr(uid >> 8)
+        #TODO: check what happens if name is missing...
         if privilege not in [const.USER_DEFAULT, const.USER_ADMIN]:
             privilege = const.USER_DEFAULT
         privilege = int(privilege)
@@ -827,8 +832,8 @@ class ZK(object):
                     raise ZKErrorResponse("Can't find user")
         if isinstance(fingers, Finger):
             fingers = [fingers]
-        fpack = ""
-        table = ""
+        fpack = b""
+        table = b""
         fnum = 0x10 # possibly flag
         tstart = 0
         for finger in fingers:
