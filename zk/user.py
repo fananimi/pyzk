@@ -10,7 +10,20 @@ class User(object):
         self.password = str(password)
         self.group_id = str(group_id)
         self.user_id = user_id
-        self.card = card # 64 int to 40 bit int
+        self.card = int(card) # 64 int to 40 bit int
+
+    @staticmethod
+    def json_unpack(json):
+        #validate?
+        return User(
+            uid=json['uid'],
+            name=json['name'],
+            privilege=json['privilege'],
+            password=json['password'],
+            group_id=json['group_id'],
+            user_id=json['user_id'],
+            card=json['card']
+        )
 
     def repack29(self): # with 02 for zk6 (size 29)
         return pack("<BHB5s8sIxBhI", 2, self.uid, self.privilege, self.password.encode(User.encoding, errors='ignore'), self.name.encode(User.encoding, errors='ignore'), self.card, int(self.group_id) if self.group_id else 0, 0, int(self.user_id))

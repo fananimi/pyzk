@@ -8,7 +8,7 @@ import datetime
 import codecs
 from builtins import input
 
-import pickle
+import json
 
 sys.path.append("zk")
 
@@ -55,7 +55,7 @@ try:
     fp_version = conn.get_fp_version()
     print ('Serial Number    : {}'.format(serialnumber))
     print ('Finger Version   : {}'.format(fp_version))
-    filename = args.filename if args.filename else "{}.bak".format(serialnumber)
+    filename = args.filename if args.filename else "{}.json.bak".format(serialnumber)
     print ('')
     if not args.restore:
         print ('--- sizes & capacity ---')
@@ -76,29 +76,33 @@ try:
         #save to file!
         print ('')
         print ('Saving to file {} ...'.format(filename))
-        output = open(filename, 'wb')
+        output = open(filename, 'w')
         data = {
-            'version':'1.00ut',
+            'version':'1.00jut',
             'serial': serialnumber,
             'fp_version': fp_version,
-            'users': users,
-            'templates':templates
+            'users': [u.__dict__ for u in users],
+            'templates':[t.json_pack() for t in templates]
             }
-        pickle.dump(data, output, -1)
+        json.dump(data, output, indent=1)
         output.close()
     else:
         print ('Reading file {}'.format(filename))
-        infile = open(filename, 'rb')
-        data = pickle.load(infile)
+        infile = open(filename, 'r')
+        data = json.load(infile)
         infile.close()
         #compare versions...
-        if data['version'] != '1.00ut':
+        if data['version'] != '1.00jut':
             raise BasicException("file with different version... aborting!")
         if data['fp_version'] != fp_version:
             raise BasicException("fingerprint version mismmatch {} != {} ... aborting!".format(fp_version, data['fp_version']))
         #TODO: check data consistency...
-        print ("INFO: ready to write {} users".format(len(data['users'])))
-        print ("INFO: ready to write {} templates".format(len(data['templates'])))
+        users = [User.json_unpack(u) for u in data['users']]
+        #print (users)
+        print ("INFO: ready to write {} users".format(len(users)))
+        templates = [Finger.json_unpack(t) for t in data['templates']]
+        #print (templates)
+        print ("INFO: ready to write {} templates".format(len(templates)))
         #input serial number to corroborate.
         print ('WARNING! the next step will erase the current device content.')
         print ('Please input the serialnumber of this device [{}] to acknowledge the ERASING!'.format(serialnumber))
@@ -111,10 +115,12 @@ try:
         if args.clear_attendance:
             print ('Clearing attendance too!')
             conn.clear_attendance()
+        conn.read_sizes()
+        print (conn)
         print ('Restoring Data...')
-        for u in data['users']:
+        for u in users:
             #look for Templates
-            temps = list(filter(lambda f: f.uid ==u.uid, data['templates']))
+            temps = list(filter(lambda f: f.uid ==u.uid, templates))
             #print ("user {} has {} fingers".format(u.uid, len(temps)))
             conn.save_user_template(u,temps)
         conn.enable_device()

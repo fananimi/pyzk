@@ -16,10 +16,26 @@ class Finger(object):
 
     def repack_only(self): #only template
         return pack("H%is" % (self.size), self.size, self.template)
-    
-    def __eq__(self, other): 
+    @staticmethod
+    def json_unpack(json):
+        return Finger(
+            uid=json['uid'],
+            fid=json['fid'],
+            valid=json['valid'],
+            template=codecs.decode(json['template'],'hex')
+        )
+    def json_pack(self): #packs for json
+        return {
+            "size": self.size,
+            "uid": self.uid,
+            "fid": self.fid,
+            "valid": self.valid,
+            "template": codecs.encode(self.template, 'hex').decode('ascii')
+        }
+
+    def __eq__(self, other):
         return self.__dict__ == other.__dict__
-    
+
     def __str__(self):
         return "<Finger> [uid:{:>3}, fid:{}, size:{:>4} v:{} t:{}]".format(self.uid, self.fid, self.size, self.valid, self.mark)
 
