@@ -40,6 +40,8 @@ parser.add_argument('-t', '--templates', action="store_true",
                     help='Get templates / fingers (compare bulk and single read)')
 parser.add_argument('-tr', '--templates-raw', action="store_true",
                     help='Get raw templates (dump templates)')
+parser.add_argument('-ti', '--templates-index', type=int,
+                    help='Get specific template', default=0)
 parser.add_argument('-r', '--records', action="store_true",
                     help='Get attendance records')
 parser.add_argument('-u', '--updatetime', action="store_true",
@@ -166,6 +168,7 @@ try:
             conn.save_user_template(zk_user)# forced creation
             args.enrolluser = uid
         conn.refresh_data()
+
     if args.enrolluser:
         uid = int(args.enrolluser)
         print ('--- Enrolling User #{} ---'.format(uid))
@@ -180,7 +183,14 @@ try:
         conn.refresh_data()
     #print ("Voice Test ...")
     #conn.test_voice(10)
-    if args.templates or args.templates_raw:
+    if args.templates_index:
+        print ("Read Single template... {}".format(args.templates_index))
+        inicio = time.time()
+        template = conn.get_user_template(args.templates_index, args.finger)
+        final = time.time()
+        print ('    took {:.3f}[s]'.format(final - inicio))
+        print (" single! {}".format(template))
+    elif args.templates or args.templates_raw:
         print ("Read Templates...")
         inicio = time.time()
         templates = conn.get_templates()

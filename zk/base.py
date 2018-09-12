@@ -1290,6 +1290,7 @@ class ZK(object):
             size -= len(resp)
             if self.verbose: print ("new tcp DATA packet to fill misssing {}".format(size))
             data_recv = bh + self.__sock.recv(size) #ideal limit?
+            if self.verbose: print ("new tcp DATA starting with {} bytes".format(len(data_recv)))
             resp, bh = self.__recieve_tcp_data(data_recv, size)
             data.append(resp)
             if self.verbose: print ("for misssing {} recieved {} with extra {}".format(size, len(resp), len(bh)))
@@ -1333,6 +1334,7 @@ class ZK(object):
             data_recv = self.__sock.recv(size) #ideal limit?
             recieved = len(data_recv)
             if self.verbose: print ("partial recv {}".format(recieved))
+            if recieved < 100 and self.verbose: print ("   recv {}".format(codecs.encode(data_recv, 'hex')))
             data.append(data_recv) # w/o tcp and header
             size -= recieved
             if self.verbose: print ("still need {}".format(size))
