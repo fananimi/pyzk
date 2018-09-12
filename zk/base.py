@@ -1289,7 +1289,7 @@ class ZK(object):
             data.append(resp)
             size -= len(resp)
             if self.verbose: print ("new tcp DATA packet to fill misssing {}".format(size))
-            data_recv = bh + self.__sock.recv(size) #ideal limit?
+            data_recv = bh + self.__sock.recv(size + 16 ) #ideal limit + header
             if self.verbose: print ("new tcp DATA starting with {} bytes".format(len(data_recv)))
             resp, bh = self.__recieve_tcp_data(data_recv, size)
             data.append(resp)
@@ -1358,13 +1358,17 @@ class ZK(object):
                 return self.__data #without headers
         elif self.__response == const.CMD_PREPARE_DATA:
             data = []
-            size = self.__get_data_size()
+            size = self.__get_data_size() # from prepare data response...
             if self.verbose: print ("recieve chunk: prepare data size is {}".format(size))
             if self.tcp:
+                if self.verbose: print ("recieve chunk: len data is {}".format(len(self.__data)))
+                #ideally 8 bytes of PREPARE_DATA only...
+                #but sometimes it comes with data...
+
                 if len(self.__data) >= (8 + size): #prepare data with actual data! should be 8+size+32
-                    data_recv = self.__data[8:] # test, maybe -32
+                    data_recv = self.__data[8:] #  no need for more data! test, maybe -32
                 else:
-                    data_recv = self.__sock.recv(size + 32) #could have two commands
+                    data_recv = self.__data[8:] + self.__sock.recv(size + 32) #could have two commands
                 resp, broken_header = self.__recieve_tcp_data(data_recv, size)
                 data.append(resp)
                 # get CMD_ACK_OK
