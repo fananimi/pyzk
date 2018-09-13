@@ -530,7 +530,7 @@ class ZK(object):
         if cmd_response.get('status'):
             response = (self.__data.split(b'=', 1)[-1].split(b'\x00')[0])
             #definitivo? seleccionar firmware aqui?
-            return int(response) if response else 0
+            return safe_cast(response, int ,0) if response else 0
         else:
             return None
 

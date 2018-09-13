@@ -316,6 +316,9 @@ Firmware Version : Ver 6.60 Nov 6 2017 (remote tested with correct results)
 Platform : ZMM220_TFT
 DeviceName : (unknown device) (broken info but at least the important data was read)
 
+Firmware Version : Ver 6.60 Jun 9 2017
+Platform : JZ4725_TFT
+DeviceName : K20 (latest checked correctly!)
 ```
 
 
@@ -331,9 +334,11 @@ Firmware Version : Ver 6.60 Jun 16 2015
 Platform : JZ4725_TFT
 DeviceName : K14 (not tested, but same behavior like the other one)
 
-Firmware Version : Ver 6.60 Jun 9 2017
-Platform : JZ4725_TFT
-DeviceName : K20 (Active testing! latest fix)
+
+
+Firmware Version : Ver 6.60 Jun 5 2015
+Platform : ZMM200_TFT
+DeviceName : iClock3000/ID (Active testing! latest fix)
 
 Firmware Version : Ver 6.70 Jul 12 2013
 Platform : ZEM600_TFT
