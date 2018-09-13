@@ -397,7 +397,7 @@ class ZK(object):
         return the serial number
         '''
         command = const.CMD_OPTIONS_RRQ
-        command_string = b'~SerialNumber'
+        command_string = b'~SerialNumber\x00'
         response_size = 1024
         cmd_response = self.__send_command(command, command_string, response_size)
         if cmd_response.get('status'):
@@ -412,7 +412,7 @@ class ZK(object):
         return the platform name
         '''
         command = const.CMD_OPTIONS_RRQ
-        command_string = b'~Platform'
+        command_string = b'~Platform\x00'
         response_size = 1024
 
         cmd_response = self.__send_command(command, command_string, response_size)
@@ -428,7 +428,7 @@ class ZK(object):
         return the mac
         '''
         command = const.CMD_OPTIONS_RRQ
-        command_string = b'MAC'
+        command_string = b'MAC\x00'
         response_size = 1024
 
         cmd_response = self.__send_command(command, command_string, response_size)
@@ -443,7 +443,7 @@ class ZK(object):
         return the device name
         '''
         command = const.CMD_OPTIONS_RRQ
-        command_string = b'~DeviceName'
+        command_string = b'~DeviceName\x00'
         response_size = 1024
 
         cmd_response = self.__send_command(command, command_string, response_size)
@@ -459,7 +459,7 @@ class ZK(object):
         return the face version
         '''
         command = const.CMD_OPTIONS_RRQ
-        command_string = b'ZKFaceVersion'
+        command_string = b'ZKFaceVersion\x00'
         response_size = 1024
 
         cmd_response = self.__send_command(command, command_string, response_size)
@@ -474,7 +474,7 @@ class ZK(object):
         return the fingerprint version
         '''
         command = const.CMD_OPTIONS_RRQ
-        command_string = b'~ZKFPVersion'
+        command_string = b'~ZKFPVersion\x00'
         response_size = 1024
 
         cmd_response = self.__send_command(command, command_string, response_size)
@@ -497,7 +497,7 @@ class ZK(object):
         determine extend fmt
         '''
         command = const.CMD_OPTIONS_RRQ
-        command_string = b'~ExtendFmt'
+        command_string = b'~ExtendFmt\x00'
         response_size = 1024
 
         cmd_response = self.__send_command(command, command_string, response_size)
@@ -515,7 +515,7 @@ class ZK(object):
         determine user extend fmt
         '''
         command = const.CMD_OPTIONS_RRQ
-        command_string = b'~UserExtFmt'
+        command_string = b'~UserExtFmt\x00'
         response_size = 1024
 
         cmd_response = self.__send_command(command, command_string, response_size)
@@ -532,7 +532,7 @@ class ZK(object):
         determine extend fmt
         '''
         command = const.CMD_OPTIONS_RRQ
-        command_string = b'FaceFunOn'
+        command_string = b'FaceFunOn\x00'
         response_size = 1024
 
         cmd_response = self.__send_command(command, command_string, response_size)
@@ -549,7 +549,7 @@ class ZK(object):
         determine old firmware
         '''
         command = const.CMD_OPTIONS_RRQ
-        command_string = b'CompatOldFirmware'
+        command_string = b'CompatOldFirmware\x00'
         response_size = 1024
 
         cmd_response = self.__send_command(command, command_string, response_size)
@@ -565,13 +565,13 @@ class ZK(object):
         ip = self.__address[0]
         mask = b''
         gate = b''
-        cmd_response = self.__send_command(const.CMD_OPTIONS_RRQ, b'IPAddress', 1024)
+        cmd_response = self.__send_command(const.CMD_OPTIONS_RRQ, b'IPAddress\x00', 1024)
         if cmd_response.get('status'):
             ip = (self.__data.split(b'=', 1)[-1].split(b'\x00')[0])
-        cmd_response = self.__send_command(const.CMD_OPTIONS_RRQ, b'NetMask', 1024)
+        cmd_response = self.__send_command(const.CMD_OPTIONS_RRQ, b'NetMask\x00', 1024)
         if cmd_response.get('status'):
             mask = (self.__data.split(b'=', 1)[-1].split(b'\x00')[0])
-        cmd_response = self.__send_command(const.CMD_OPTIONS_RRQ, b'GATEIPAddress', 1024)
+        cmd_response = self.__send_command(const.CMD_OPTIONS_RRQ, b'GATEIPAddress\x00', 1024)
         if cmd_response.get('status'):
             gate = (self.__data.split(b'=', 1)[-1].split(b'\x00')[0])
         return {'ip': ip.decode(), 'mask': mask.decode(), 'gateway': gate.decode()}
