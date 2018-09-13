@@ -484,7 +484,14 @@ class ZK(object):
             return safe_cast(response, int, 0) if response else 0
         else:
             return None
-
+    def _clear_error(self, command_string=b''):
+        """ clear ACK_error """
+        cmd_response = self.__send_command(const.CMD_ACK_ERROR, command_string, 1024)
+        # cmd_response['code'] shuld be CMD_ACK_UNKNOWN
+        cmd_response = self.__send_command(const.CMD_ACK_UNKNOWN, command_string, 1024)
+        cmd_response = self.__send_command(const.CMD_ACK_UNKNOWN, command_string, 1024)
+        cmd_response = self.__send_command(const.CMD_ACK_UNKNOWN, command_string, 1024)
+        
     def get_extend_fmt(self):
         '''
         determine extend fmt
@@ -499,6 +506,7 @@ class ZK(object):
             #definitivo? seleccionar firmware aqui?
             return safe_cast(fmt, int, 0) if fmt else 0
         else:
+            self._clear_error(command_string)
             return None
             #raise ZKErrorResponse("Can't read extend fmt")
 
@@ -516,6 +524,7 @@ class ZK(object):
             #definitivo? seleccionar firmware aqui?
             return safe_cast(fmt, int, 0) if fmt else 0
         else:
+            self._clear_error(command_string)
             return None
 
     def get_face_fun_on(self):
@@ -532,6 +541,7 @@ class ZK(object):
             #definitivo? seleccionar firmware aqui?
             return safe_cast(response, int ,0) if response else 0
         else:
+            self._clear_error(command_string)
             return None
 
     def get_compat_old_firmware(self):
@@ -548,6 +558,7 @@ class ZK(object):
             #definitivo? seleccionar firmware aqui?
             return safe_cast(response, int, 0) if response else 0
         else:
+            self._clear_error(command_string)
             return None
 
     def get_network_params(self):
