@@ -499,7 +499,8 @@ class ZK(object):
             #definitivo? seleccionar firmware aqui?
             return safe_cast(fmt, int, 0) if fmt else 0
         else:
-            raise ZKErrorResponse("Can't read extend fmt")
+            return None
+            #raise ZKErrorResponse("Can't read extend fmt")
 
     def get_user_extend_fmt(self):
         '''
