@@ -972,6 +972,9 @@ class ZK(object):
 
     def get_templates(self):
         """ return array of all fingers """
+        self.read_sizes() # last update
+        if self.fingers == 0: #lazy
+            return []
         templates = []
         templatedata, size = self.read_with_buffer(const.CMD_DB_RRQ, const.FCT_FINGERTMP)
         if size < 4:
