@@ -210,7 +210,7 @@ for attendance in conn.live_capture():
     # and disables live capture
 ```
 
-Test Machine
+**Test Machine**
 
 ```sh
 usage: ./test_machine.py [-h] [-a ADDRESS] [-p PORT] [-T TIMEOUT] [-P PASSWORD]
@@ -249,7 +249,7 @@ optional arguments:
 
 ```
 
-Backup/Restore (Users and fingers only!!!) (WARNING! destructive test! do it at your own risk!)
+**Backup/Restore (Users and fingers only!!!)** *(WARNING! destructive test! do it at your own risk!)*
 
 ```sh
 usage: ./test_backup_restore.py [-h] [-a ADDRESS] [-p PORT] [-T TIMEOUT]
@@ -333,6 +333,10 @@ DeviceName : K14 (not tested, but same behavior like the other one)
 Firmware Version : Ver 6.60 Jun 9 2017
 Platform : JZ4725_TFT
 DeviceName : K20 (Active testing! latest fix)
+
+Firmware Version : Ver 6.70 Jul 12 2013
+Platform : ZEM600_TFT
+DeviceName : iClock880-H/ID (Active testing! latest fix)
 ```
 
 ### Not Working (needs more tests, more information)
