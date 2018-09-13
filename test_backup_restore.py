@@ -36,6 +36,8 @@ parser.add_argument('-f', '--force-udp', action="store_true",
                     help='Force UDP communication')
 parser.add_argument('-v', '--verbose', action="store_true",
                     help='Print debug information')
+parser.add_argument('-E', '--erase', action="store_true",
+                    help='clean the device after  writting backup!')
 parser.add_argument('-r', '--restore', action="store_true",
                     help='Restore from backup')
 parser.add_argument('-c', '--clear-attendance', action="store_true",
@@ -45,6 +47,21 @@ parser.add_argument('filename', nargs='?',
 
 args = parser.parse_args()
 
+def erase_device(conn, serialnumber, clear_attendance=False):
+    """input serial number to corroborate."""
+    print ('WARNING! the next step will erase the current device content.')
+    print ('Please input the serialnumber of this device [{}] to acknowledge the ERASING!'.format(serialnumber))
+    new_serial = input ('Serial Number    : ')
+    if new_serial != serialnumber:
+        raise BasicException('Serial number mismatch')
+    conn.disable_device()
+    print ('Erasing device...')
+    conn.clear_data()
+    if clear_attendance:
+        print ('Clearing attendance too!')
+        conn.clear_attendance()
+    conn.read_sizes()
+    print (conn)
 
 
 zk = ZK(args.address, port=args.port, timeout=args.timeout, password=args.password, force_udp=args.force_udp, verbose=args.verbose)
@@ -86,6 +103,8 @@ try:
             }
         json.dump(data, output, indent=1)
         output.close()
+        if args.erase:
+            erase_device(conn, serialnumber, args.clear_attendance)
     else:
         print ('Reading file {}'.format(filename))
         infile = open(filename, 'r')
@@ -103,20 +122,7 @@ try:
         templates = [Finger.json_unpack(t) for t in data['templates']]
         #print (templates)
         print ("INFO: ready to write {} templates".format(len(templates)))
-        #input serial number to corroborate.
-        print ('WARNING! the next step will erase the current device content.')
-        print ('Please input the serialnumber of this device [{}] to acknowledge the ERASING!'.format(serialnumber))
-        new_serial = input ('Serial Number    : ')
-        if new_serial != serialnumber:
-            raise BasicException('Serial number mismatch')
-        conn.disable_device()
-        print ('Erasing device...')
-        conn.clear_data()
-        if args.clear_attendance:
-            print ('Clearing attendance too!')
-            conn.clear_attendance()
-        conn.read_sizes()
-        print (conn)
+        erase_device(conn, serialnumber, args.clear_attendance)
         print ('Restoring Data...')
         for u in users:
             #look for Templates

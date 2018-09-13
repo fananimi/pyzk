@@ -272,6 +272,7 @@ optional arguments:
                         Device code/password
   -f, --force-udp       Force UDP communication
   -v, --verbose         Print debug information
+  -E, --erase           clean the device after writting backup!
   -r, --restore         Restore from backup
   -c, --clear-attendance
                         On Restore, also clears the attendance [default keep
