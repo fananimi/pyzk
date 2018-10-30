@@ -149,7 +149,6 @@ conn.delete_user(uid=1)
 ```
 there is also an `enroll_user()` (but it doesn't work with some tcp ZK8 devices)
 
-
 * Fingerprints
 
 ```python
@@ -162,6 +161,10 @@ fingers = conn.get_templates()
 # pass a User object and a list of finger (max 10) to save
 
 conn.save_user_template(user, [fing1 ,fing2])
+
+* Remote Fingerprint Enrollment
+```
+zk.enroll_user('23')
 ```
 
 
@@ -354,14 +357,6 @@ DeviceName : iClock260 (no capture data - probably similar problem as the latest
 ```
 
 If you have another version tested and it worked, please inform me to update this list!
-
-# Related Project
-
-* [zkcluster](https://github.com/kurenai-ryu/zkcluster/ "zkcluster project") is a django apps to manage multiple fingerprint devices. (Initial support form the [original project](https://github.com/fananimi/zkcluster/))
-
-# Related Project (TODO: check compatibility with this fork)
-
-* [Driji](https://github.com/fananimi/driji/ "Driji project") is an attendance apps based fingerprint for school
 
 # Todo
 
