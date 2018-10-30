@@ -94,6 +94,8 @@ EF_FPFTR            = (1<<8)# be real-time capture fingerprint minutia
 EF_ALARM            = (1<<9)# Alarm signal
 
 USER_DEFAULT        = 0
+USER_ENROLLER       = 2
+USER_MANAGER        = 6
 USER_ADMIN          = 14
 
 FCT_ATTLOG          = 1
@@ -103,3 +105,6 @@ FCT_OPLOG           = 4
 FCT_USER            = 5
 FCT_SMS             = 6
 FCT_UDATA           = 7
+
+MACHINE_PREPARE_DATA_1 = 20560 # 0x5050
+MACHINE_PREPARE_DATA_2 = 32130 # 0x7282
