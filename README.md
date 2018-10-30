@@ -161,9 +161,10 @@ fingers = conn.get_templates()
 # pass a User object and a list of finger (max 10) to save
 
 conn.save_user_template(user, [fing1 ,fing2])
+```
 
 * Remote Fingerprint Enrollment
-```
+```python
 zk.enroll_user('23')
 ```
 
