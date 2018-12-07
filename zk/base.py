@@ -491,7 +491,7 @@ class ZK(object):
         cmd_response = self.__send_command(const.CMD_ACK_UNKNOWN, command_string, 1024)
         cmd_response = self.__send_command(const.CMD_ACK_UNKNOWN, command_string, 1024)
         cmd_response = self.__send_command(const.CMD_ACK_UNKNOWN, command_string, 1024)
-        
+
     def get_extend_fmt(self):
         '''
         determine extend fmt
@@ -1213,6 +1213,7 @@ class ZK(object):
         self.verify_user()
         if not self.is_enabled:
             self.enable_device()
+        if self.verbose: print ("start live_capture")
         self.reg_event(const.EF_ATTLOG) #0xFFFF
         self.__sock.settimeout(new_timeout) # default 1 minute test?
         self.end_live_capture = False
@@ -1230,7 +1231,7 @@ class ZK(object):
                     header = unpack('<4H', data_recv[:8])
                     data = data_recv[8:]
                 if not header[0] == const.CMD_REG_EVENT:
-                    if self.verbose: print("not event!")
+                    if self.verbose: print("not event! %x" % header[0])
                     continue # or raise error?
                 if not len(data):
                     if self.verbose: print ("empty")
@@ -1248,8 +1249,8 @@ class ZK(object):
                     else:
                         uid = tuser[0].uid
                     yield Attendance(user_id, timestamp, status, punch, uid)#punch test?
-                elif len(data) == 36: #class 2 attendance
-                    user_id,  status, punch, timehex, res = unpack('<24sBB6sI', data)
+                elif len(data) == 36 or len(data) == 32: #class 2 attendance
+                    user_id,  status, punch, timehex = unpack('<24sBB6s', data[:32])
                     user_id = (user_id.split(b'\x00')[0]).decode(errors='ignore')
                     timestamp = self.__decode_timehex(timehex)
                     tuser = list(filter(lambda x: x.user_id == user_id, users))
