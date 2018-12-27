@@ -677,6 +677,8 @@ class ZK(object):
         command = const.CMD_RESTART
         cmd_response = self.__send_command(command)
         if cmd_response.get('status'):
+            self.is_connect = False
+            self.next_uid = 1
             return True
         else:
             raise ZKErrorResponse("can't restart device")
@@ -714,6 +716,8 @@ class ZK(object):
         response_size = 1032
         cmd_response = self.__send_command(command, command_string, response_size)
         if cmd_response.get('status'):
+            self.is_connect = False
+            self.next_uid = 1
             return True
         else:
             raise ZKErrorResponse("can't poweroff")
