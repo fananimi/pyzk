@@ -1235,8 +1235,11 @@ class ZK(object):
                 if not len(data):
                     if self.verbose: print ("empty")
                     continue
-                while len(data) >= 32:
-                    if len(data) == 32:
+                while len(data) >= 12:
+                    if len(data) == 12:
+                        user_id, status, punch, timehex = unpack('<IBB6s', data)
+                        data = data[12:]
+                    elif len(data) == 32:
                         user_id,  status, punch, timehex = unpack('<24sBB6s', data[:32])
                         data = data[32:]
                     elif len(data) == 36:
@@ -1245,7 +1248,10 @@ class ZK(object):
                     elif len(data) >= 52:
                         user_id,  status, punch, timehex, _other = unpack('<24sBB6s20s', data[:52])
                         data = data[52:]
-                    user_id = (user_id.split(b'\x00')[0]).decode(errors='ignore')
+                    if isinstance(user_id, int):
+                        user_id = str(user_id)
+                    else:
+                        user_id = (user_id.split(b'\x00')[0]).decode(errors='ignore')
                     timestamp = self.__decode_timehex(timehex)
                     tuser = list(filter(lambda x: x.user_id == user_id, users))
                     if not tuser:
