@@ -1235,21 +1235,16 @@ class ZK(object):
                 if not len(data):
                     if self.verbose: print ("empty")
                     continue
-                """if len (data) == 5:
-
-                    continue"""
-                if len(data) == 12: #class 1 attendance #TODO: RETEST ZK6
-                    user_id, status, punch, timehex = unpack('<IBB6s', data)
-                    user_id = str(user_id)
-                    timestamp = self.__decode_timehex(timehex)
-                    tuser = list(filter(lambda x: x.user_id == user_id, users))
-                    if not tuser:
-                        uid = int(user_id)
-                    else:
-                        uid = tuser[0].uid
-                    yield Attendance(user_id, timestamp, status, punch, uid)
-                elif len(data) == 36 or len(data) == 32:
-                    user_id,  status, punch, timehex = unpack('<24sBB6s', data[:32])
+                while len(data) >= 32:
+                    if len(data) == 32:
+                        user_id,  status, punch, timehex = unpack('<24sBB6s', data[:32])
+                        data = data[32:]
+                    elif len(data) == 36:
+                        user_id,  status, punch, timehex, _other = unpack('<24sBB6s4s', data[:36])
+                        data = data[36:]
+                    elif len(data) >= 52:
+                        user_id,  status, punch, timehex, _other = unpack('<24sBB6s20s', data[:52])
+                        data = data[52:]
                     user_id = (user_id.split(b'\x00')[0]).decode(errors='ignore')
                     timestamp = self.__decode_timehex(timehex)
                     tuser = list(filter(lambda x: x.user_id == user_id, users))
@@ -1258,9 +1253,6 @@ class ZK(object):
                     else:
                         uid = tuser[0].uid
                     yield Attendance(user_id, timestamp, status, punch, uid)
-                else:
-                    if self.verbose: print (codecs.encode(data, 'hex')), len(data)
-                    yield codecs.encode(data, 'hex')
             except timeout:
                 if self.verbose: print ("time out")
                 yield None # return to keep watching
