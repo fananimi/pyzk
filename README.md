@@ -1,22 +1,25 @@
 # pyzk
 
-pyzk is an unofficial library of zksoftware (zkteco family) the fingerprint attendance machine.
+[![Build Status](https://travis-ci.org/fananimi/pyzk.svg?branch=master)](https://travis-ci.org/fananimi/pyzk)
+
+`pyzk` is an unofficial library of zksoftware (zkteco family) attendance machine.
 
 # Installation
 
-[![Build Status](https://travis-ci.org/fananimi/pyzk.svg?branch=master)](https://travis-ci.org/fananimi/pyzk)
+There is some installation method you can use below:
 
+* pip
 ```sh
 pip install -U pyzk
 ```
 
-or clone and execute:
+* manual installation (clone and execute)
 
 ```sh
 python setup.py install
 ```
 
-or in your project, append the path of this project
+* clone and append the path of this project
 
 ```python
 import sys
@@ -33,36 +36,38 @@ Complete documentation can be found at [Readthedocs](http://pyzk.readthedocs.io/
 
 Create the ZK object and you will be ready to call api.
 
-* Basic Usage
+## Basic Usage
+
+The following is an example code block how to use pyzk.
 
 ```python
 from zk import ZK, const
 
 conn = None
+# create ZK instance
 zk = ZK('192.168.1.201', port=4370, timeout=5, password=0, force_udp=False, ommit_ping=False)
 try:
-    print ('Connecting to device ...')
+    # connect to device
     conn = zk.connect()
-    print ('Disabling device ...')
+    # disable device, this method ensures no activity on the device while the process is run
     conn.disable_device()
-    print ('Firmware Version: : {}'.format(conn.get_firmware_version()))
-    # print '--- Get User ---'
+    # another commands will be here!
+    # Example: Get All Users
     users = conn.get_users()
     for user in users:
         privilege = 'User'
         if user.privilege == const.USER_ADMIN:
             privilege = 'Admin'
-
-        print ('- UID #{}'.format(user.uid))
+        print ('+ UID #{}'.format(user.uid))
         print ('  Name       : {}'.format(user.name))
         print ('  Privilege  : {}'.format(privilege))
         print ('  Password   : {}'.format(user.password))
         print ('  Group ID   : {}'.format(user.group_id))
         print ('  User  ID   : {}'.format(user.user_id))
 
-    print ("Voice Test ...")
+    # Test Voice: Say Thank You
     conn.test_voice()
-    print ('Enabling device ...')
+    # re-enable device after all commands already executed
     conn.enable_device()
 except Exception as e:
     print ("Process terminate : {}".format(e))
@@ -70,6 +75,8 @@ finally:
     if conn:
         conn.disconnect()
 ```
+
+## Command List
 
 * Connect/Disconnect
 
@@ -81,9 +88,9 @@ conn.disconnect()
 * Disable/Enable Connected Device
 
 ```python
-# disable (lock) device, ensure no activity while some process run
+# disable (lock) device, to ensure no user activity in device while some process run
 conn.disable_device()
-# re-enable the connected device
+# re-enable the connected device and allow user activity in device again
 conn.enable_device()
 ```
 
@@ -100,7 +107,7 @@ conn.set_time(newtime)
 ```
 
 
-* Ger Firmware Version and extra information
+* Ger Firmware Version and Extra Information
 
 ```python
 conn.get_firmware_version()
@@ -118,7 +125,7 @@ conn.get_mac()
 conn.get_pin_width()
 ```
 
-* Get Device use and free Space
+* Get Device Usage Space
 
 ```python
 conn.read_sizes()
@@ -142,6 +149,7 @@ conn.set_user(uid=1, name='Fanani M. Ihsan', privilege=const.USER_ADMIN, passwor
 users = conn.get_users()
 # Delete User
 conn.delete_user(uid=1)
+conn.delete_user(user_id=123)
 ```
 
 * Fingerprints
@@ -168,7 +176,7 @@ zk.enroll_user('1')
 ```python
 # Get attendances (will return list of Attendance object)
 attendances = conn.get_attendance()
-# Clear attendances record
+# Clear attendances records
 conn.clear_attendance()
 ```
 
@@ -176,81 +184,81 @@ conn.clear_attendance()
 
 ```python
 """
-play test voice:
-0 Thank You
-1 Incorrect Password
-2 Access Denied
-3 Invalid ID
-4 Please try again
-5 Re-enter ID
-6 The clock is full
-7 The clock is full
-8 Duplicate finger
-9 Accepted. Thank you
-10 beep kuko
-11 beep siren
-12 -
-13 beep bell
-/*
-**
-***
-HELP! TRANSLATE TO ENGLISH THE FOLLOWING ITEMS
-***
-**
-*
-*/
-14 excedido tiempo p esta operacion  /-
-15 coloque su dedo de nuevo  /-
-16 coloque su dedo por ultima vez  /-
-17 ATN numero de tarjeta está repetida  /-
-18 proceso de registro correcto *  /-
-19 borrado correcto /-
-20 Numero de usuario / ponga la caja de ojos
-21 ATN se ha llegado al max num usuarios /-
-22 verificacion de usuarios /-
-23 usuario no registrado /-
-24 ATN se ha llegado al num max de registros /-
-25 ATN la puerta no esta cerrada /-
-26 registro de usuarios /-
-27 borrado de usuarios /-
-28 coloque su dedo  /-
-29 registre la tarjeta de administrador /-
-30 0 /-
-31 1 /-
-32 2 /-
-33 3 /-
-34 4 /-
-35 5 /-
-36 6 /-
-37 7 /-
-38 8 /-
-39 9 /-
-40 PFV seleccione numero de usuario /-
-41 registrar /-
-42 operacion correcta /-
-43 PFV acerque su tarjeta /-
-43 la tarjeta ha sido registrada /-
-45 error en operacion /-
-46 PFV acerque tarjeta de administracion, p confirmacion /-
-47 descarga de fichajes /-
-48 descarga de usuarios /-
-49 carga de usuarios /-
-50 actualizan de firmware /-
-51 ejeuctar ficheros de configuracion /-
-52 confirmación de clave de acceso correcta /-
-53 error en operacion de tclado /-
-54 borrar todos los usuarios /-
-55 restaurar terminal con configuracion por defecto /-
-56 introduzca numero de usuario /-
-57 teclado bloqueado /-
-58 error en la gestión de la tarjeta  /-
-59 establezca una clave de acceso /-
-60 pulse el teclado  /-
-61 zona de accceso invalida /-
-62 acceso combinado invĺlido /-
-63 verificación multiusuario /-
-64 modo de verificación inválido /-
-65 - /-
+ play test voice:
+  0 Thank You
+  1 Incorrect Password
+  2 Access Denied
+  3 Invalid ID
+  4 Please try again
+  5 Re-enter ID
+  6 The clock is full
+  7 The clock is full
+  8 Duplicate finger
+  9 Accepted. Thank you
+  10 beep kuko
+  11 beep siren
+  12 -
+  13 beep bell
+  /*
+    **
+    ***
+    HELP! TRANSLATE TO ENGLISH THE FOLLOWING ITEMS
+    ***
+    **
+    *
+  */
+  14 excedido tiempo p esta operacion  /-
+  15 coloque su dedo de nuevo  /-
+  16 coloque su dedo por ultima vez  /-
+  17 ATN numero de tarjeta está repetida  /-
+  18 proceso de registro correcto *  /-
+  19 borrado correcto /-
+  20 Numero de usuario / ponga la caja de ojos
+  21 ATN se ha llegado al max num usuarios /-
+  22 verificacion de usuarios /-
+  23 usuario no registrado /-
+  24 ATN se ha llegado al num max de registros /-
+  25 ATN la puerta no esta cerrada /-
+  26 registro de usuarios /-
+  27 borrado de usuarios /-
+  28 coloque su dedo  /-
+  29 registre la tarjeta de administrador /-
+  30 0 /-
+  31 1 /-
+  32 2 /-
+  33 3 /-
+  34 4 /-
+  35 5 /-
+  36 6 /-
+  37 7 /-
+  38 8 /-
+  39 9 /-
+  40 PFV seleccione numero de usuario /-
+  41 registrar /-
+  42 operacion correcta /-
+  43 PFV acerque su tarjeta /-
+  43 la tarjeta ha sido registrada /-
+  45 error en operacion /-
+  46 PFV acerque tarjeta de administracion, p confirmacion /-
+  47 descarga de fichajes /-
+  48 descarga de usuarios /-
+  49 carga de usuarios /-
+  50 actualizan de firmware /-
+  51 ejeuctar ficheros de configuracion /-
+  52 confirmación de clave de acceso correcta /-
+  53 error en operacion de tclado /-
+  54 borrar todos los usuarios /-
+  55 restaurar terminal con configuracion por defecto /-
+  56 introduzca numero de usuario /-
+  57 teclado bloqueado /-
+  58 error en la gestión de la tarjeta  /-
+  59 establezca una clave de acceso /-
+  60 pulse el teclado  /-
+  61 zona de accceso invalida /-
+  62 acceso combinado invĺlido /-
+  63 verificación multiusuario /-
+  64 modo de verificación inválido /-
+  65 - /-
 """
 conn.test_voice(index=0) # will say 'Thank You'
 ```
@@ -258,7 +266,7 @@ conn.test_voice(index=0) # will say 'Thank You'
 * Device Maintenance
 
 ```python
-# DANGER!!! This command will be erase all data in the device (incude: user, attendance report, and finger database)
+# DANGER!!! This command will be erase all data in the device (incuded: user, attendance report, and finger database)
 conn.clear_data()
 # shutdown connected device
 conn.poweroff()
@@ -273,57 +281,57 @@ conn.free_data()
 ```python
 # live capture! (timeout at 10s)
 for attendance in conn.live_capture():
-if attendance is None:
-# implement here timeout logic
-pass
-else:
-print (attendance) # Attendance object
+    if attendance is None:
+        # implement here timeout logic
+        pass
+    else:
+        print (attendance) # Attendance object
 
-#if you need to break gracefully just set
-#   conn.end_live_capture = True
-#
-# On interactive mode,
-# use Ctrl+C to break gracefully
-# this way it restores timeout
-# and disables live capture
+    #if you need to break gracefully just set
+    #   conn.end_live_capture = True
+    #
+    # On interactive mode,
+    # use Ctrl+C to break gracefully
+    # this way it restores timeout
+    # and disables live capture
 ```
 
 **Test Machine**
 
 ```sh
 usage: ./test_machine.py [-h] [-a ADDRESS] [-p PORT] [-T TIMEOUT] [-P PASSWORD]
-[-f] [-t] [-r] [-u] [-l] [-D DELETEUSER] [-A ADDUSER]
-[-E ENROLLUSER] [-F FINGER]
+                         [-f] [-t] [-r] [-u] [-l] [-D DELETEUSER] [-A ADDUSER]
+                         [-E ENROLLUSER] [-F FINGER]
 
 ZK Basic Reading Tests
 
 optional arguments:
--h, --help            show this help message and exit
--a ADDRESS, --address ADDRESS
-ZK device Address [192.168.1.201]
--p PORT, --port PORT  ZK device port [4370]
--T TIMEOUT, --timeout TIMEOUT
-Default [10] seconds (0: disable timeout)
--P PASSWORD, --password PASSWORD
-Device code/password
--b, --basic           get Basic Information only. (no bulk read, ie: users)
--f, --force-udp       Force UDP communication
--v, --verbose         Print debug information
--t, --templates       Get templates / fingers (compare bulk and single read)
--tr, --templates-raw  Get raw templates (dump templates)
--r, --records         Get attendance records
--u, --updatetime      Update Date/Time
--l, --live-capture    Live Event Capture
--o, --open-door       Open door
+  -h, --help            show this help message and exit
+  -a ADDRESS, --address ADDRESS
+                        ZK device Address [192.168.1.201]
+  -p PORT, --port PORT  ZK device port [4370]
+  -T TIMEOUT, --timeout TIMEOUT
+                        Default [10] seconds (0: disable timeout)
+  -P PASSWORD, --password PASSWORD
+                        Device code/password
+  -b, --basic           get Basic Information only. (no bulk read, ie: users)
+  -f, --force-udp       Force UDP communication
+  -v, --verbose         Print debug information
+  -t, --templates       Get templates / fingers (compare bulk and single read)
+  -tr, --templates-raw  Get raw templates (dump templates)
+  -r, --records         Get attendance records
+  -u, --updatetime      Update Date/Time
+  -l, --live-capture    Live Event Capture
+  -o, --open-door       Open door
 
--D DELETEUSER, --deleteuser DELETEUSER
-Delete a User (uid)
--A ADDUSER, --adduser ADDUSER
-Add a User (uid) (and enroll)
--E ENROLLUSER, --enrolluser ENROLLUSER
-Enroll a User (uid)
--F FINGER, --finger FINGER
-Finger for enroll (fid=0)
+  -D DELETEUSER, --deleteuser DELETEUSER
+                        Delete a User (uid)
+  -A ADDUSER, --adduser ADDUSER
+                        Add a User (uid) (and enroll)
+  -E ENROLLUSER, --enrolluser ENROLLUSER
+                        Enroll a User (uid)
+  -F FINGER, --finger FINGER
+                        Finger for enroll (fid=0)
 
 ```
 
@@ -331,30 +339,30 @@ Finger for enroll (fid=0)
 
 ```sh
 usage: ./test_backup_restore.py [-h] [-a ADDRESS] [-p PORT] [-T TIMEOUT]
-[-P PASSWORD] [-f] [-v] [-r]
-[filename]
+                              [-P PASSWORD] [-f] [-v] [-r]
+                              [filename]
 
 ZK Basic Backup/Restore Tool
 
 positional arguments:
-filename              backup filename (default [serialnumber].bak)
+  filename              backup filename (default [serialnumber].bak)
 
 optional arguments:
--h, --help            show this help message and exit
--a ADDRESS, --address ADDRESS
-ZK device Address [192.168.1.201]
--p PORT, --port PORT  ZK device port [4370]
--T TIMEOUT, --timeout TIMEOUT
-Default [10] seconds (0: disable timeout)
--P PASSWORD, --password PASSWORD
-Device code/password
--f, --force-udp       Force UDP communication
--v, --verbose         Print debug information
--E, --erase           clean the device after writting backup!
--r, --restore         Restore from backup
--c, --clear-attendance
-On Restore, also clears the attendance [default keep
-attendance]
+  -h, --help            show this help message and exit
+  -a ADDRESS, --address ADDRESS
+                        ZK device Address [192.168.1.201]
+  -p PORT, --port PORT  ZK device port [4370]
+  -T TIMEOUT, --timeout TIMEOUT
+                        Default [10] seconds (0: disable timeout)
+  -P PASSWORD, --password PASSWORD
+                        Device code/password
+  -f, --force-udp       Force UDP communication
+  -v, --verbose         Print debug information
+  -E, --erase           clean the device after writting backup!
+  -r, --restore         Restore from backup
+  -c, --clear-attendance
+                        On Restore, also clears the attendance [default keep
+                        attendance]
 ```
 
 To restore on a different device, make sure to specify the `filename`. on restoring, it asks for the serial number of the destination device (to make sure it was correct, as it deletes all data) WARNING. there is no way to restore attendance data, you can keep it or clear it, but once cleared, there is no way to restore it. 
@@ -446,3 +454,4 @@ If you have another version tested and it worked, please inform me to update thi
 * HTTP Rest api
 * ~~Create real time api (if possible)~~
 * and much more ...
+
