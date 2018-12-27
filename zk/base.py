@@ -376,7 +376,7 @@ class ZK(object):
 
     def enable_device(self):
         """
-        re-enable the connected device
+        re-enable the connected device and allow user activity in device again
         """
         cmd_response = self.__send_command(const.CMD_ENABLEDEVICE)
         if cmd_response.get('status'):
@@ -387,7 +387,7 @@ class ZK(object):
 
     def disable_device(self):
         """
-        disable (lock) device, ensure no activity while some process run
+        disable (lock) device, to ensure no user activity in device while some process run
         """
         cmd_response = self.__send_command(const.CMD_DISABLEDEVICE)
         if cmd_response.get('status'):
