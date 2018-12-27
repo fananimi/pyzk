@@ -1273,13 +1273,12 @@ class ZK(object):
         if not was_enabled:
             self.disable_device()
 
-    def clear_data(self, clear_type=5):
+    def clear_data(self):
         """
         clear all data (include: user, attendance report, finger database )
-        2 = FCT_FINGERTMP
         """
         command = const.CMD_CLEAR_DATA
-        command_string = pack("B", clear_type)
+        command_string = ''
         cmd_response = self.__send_command(command, command_string)
         if cmd_response.get('status'):
             self.is_connect = False
