@@ -69,7 +69,7 @@ class PYZKTest(unittest.TestCase):
         helper.return_value.test_tcp.return_value = 1 # helper tcp ok
         socket.return_value.recv.return_value = b''
         #begin
-        zk = ZK('192.168.1.201')
+        zk = ZK('192.168.1.201', force_udp=True)
         helper.assert_called_with('192.168.1.201', 4370) # called correctly
         self.assertRaisesRegex(ZKNetworkError, "unpack requires", zk.connect) # no data...?
 
@@ -121,7 +121,7 @@ class PYZKTest(unittest.TestCase):
         helper.return_value.test_tcp.return_value = 1 # helper tcp nope
         socket.return_value.recv.return_value = codecs.decode('d007fffc2ffb0000','hex') # tcp CMD_ACK_OK
         #begin
-        zk = ZK('192.168.1.201')
+        zk = ZK('192.168.1.201', force_udp=True)
         conn = zk.connect()
         socket.return_value.sendto.assert_called_with(codecs.decode('e80317fc00000000', 'hex'), ('192.168.1.201', 4370))
         conn.disconnect()
