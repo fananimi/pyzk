@@ -216,7 +216,7 @@ class ZK(object):
         """
         send command to the terminal
         """
-        if command != const.CMD_CONNECT and not self.is_connect:
+        if command not in [const.CMD_CONNECT, const.CMD_AUTH] and not self.is_connect:
             raise ZKErrorConnection("instance are not connected.")
 
         buf = self.__create_header(command, command_string, self.__session_id, self.__reply_id)
