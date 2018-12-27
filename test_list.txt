@@ -1,0 +1,21 @@
+# TEST BASIC
+./test_machine.py -a 192.168.1.201 -p 4370 -b
+./test_machine.py -a 192.168.1.201 -p 4370 -b --force-udp
+
+# TEST TEMPLATES
+./test_machine.py -a 192.168.1.201 -p 4370 -t
+./test_machine.py -a 192.168.1.201 -p 4370 -t --force-udp
+
+# TEST TEMPLATES RAW
+./test_machine.py -a 192.168.1.201 -p 4370 -tr
+./test_machine.py -a 192.168.1.201 -p 4370 -tr --force-udp
+
+# TEST RECORDS
+./test_machine.py -a 192.168.1.201 -p 4370 -r
+./test_machine.py -a 192.168.1.201 -p 4370 -r --force-udp
+
+
+# TEST ADD USER
+./test_machine.py -a 192.168.1.201 -p 4370 -A
+./test_machine.py -a 192.168.1.201 -p 4370 --force-udp
+
