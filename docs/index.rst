@@ -139,9 +139,6 @@ Technical Documentation
 
 We open to everyone for contribute in this project. Please refer `Communication_protocol_manual_CMD.pdf <https://github.com/fananimi/pyzk/blob/master/docs/_static/Communication_protocol_manual_CMD.pdf>`_ before you starting write your code.
 
-.. toctree::
-   :maxdepth: 2
-
 
 Indices and tables
 ##################
@@ -149,3 +146,4 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+

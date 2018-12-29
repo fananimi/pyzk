@@ -59,9 +59,13 @@ def make_commkey(key, session_id, ticks=50):
 
 class ZK_helper(object):
     """
-    helper class
+    ZK helper class
     """
+
     def __init__(self, ip, port=4370):
+        """
+        Construct a new 'ZK_helper' object.
+        """
         self.address = (ip, port)
         self.ip = ip
         self.port = port
@@ -69,6 +73,8 @@ class ZK_helper(object):
     def test_ping(self):
         """
         Returns True if host responds to a ping request
+
+        :return: bool
         """
         import subprocess, platform
         # Ping parameters as function of OS
@@ -82,6 +88,10 @@ class ZK_helper(object):
                             shell=need_sh) == 0
 
     def test_tcp(self):
+        """
+        test TCP connection
+        """
+
         self.client = socket(AF_INET, SOCK_STREAM)
         self.client.settimeout(10)
         res = self.client.connect_ex(self.address)
@@ -89,6 +99,9 @@ class ZK_helper(object):
         return res
 
     def test_udp(self):
+        """
+        test UDP connection
+        """
         self.client = socket(AF_INET, SOCK_DGRAM)
         self.client.settimeout(10)
 
@@ -99,7 +112,16 @@ class ZK(object):
     """
     def __init__(self, ip, port=4370, timeout=60, password=0, force_udp=False, ommit_ping=False, verbose=False, encoding='UTF-8'):
         """
-        initialize instance
+        Construct a new 'ZK' object.
+
+        :param ip: machine's IP address
+        :param port: machine's port
+        :param timeout: timeout number
+        :param password: passint
+        :param force_udp: use UDP connection
+        :param omit_ping: check ip using ping before connect
+        :param verbose: showing log while run the commands
+        :param encoding: user encoding
         """
         User.encoding = encoding
         self.__address = (ip, port)
@@ -337,6 +359,8 @@ class ZK(object):
     def connect(self):
         """
         connect to the device
+
+        :return: bool
         """
         self.end_live_capture = False
         if not self.ommit_ping and not self.helper.test_ping():
@@ -364,6 +388,8 @@ class ZK(object):
     def disconnect(self):
         """
         diconnect from the connected device
+
+        :return: bool
         """
         cmd_response = self.__send_command(const.CMD_EXIT)
         if cmd_response.get('status'):
@@ -377,6 +403,8 @@ class ZK(object):
     def enable_device(self):
         """
         re-enable the connected device and allow user activity in device again
+
+        :return: bool
         """
         cmd_response = self.__send_command(const.CMD_ENABLEDEVICE)
         if cmd_response.get('status'):
@@ -388,6 +416,8 @@ class ZK(object):
     def disable_device(self):
         """
         disable (lock) device, to ensure no user activity in device while some process run
+
+        :return: bool
         """
         cmd_response = self.__send_command(const.CMD_DISABLEDEVICE)
         if cmd_response.get('status'):
@@ -398,7 +428,7 @@ class ZK(object):
 
     def get_firmware_version(self):
         """
-        return the firmware version
+        :return: the firmware version
         """
         cmd_response = self.__send_command(const.CMD_GET_VERSION,b'', 1024)
         if cmd_response.get('status'):
@@ -409,7 +439,7 @@ class ZK(object):
 
     def get_serialnumber(self):
         """
-        return the serial number
+        :return: the serial number
         """
         command = const.CMD_OPTIONS_RRQ
         command_string = b'~SerialNumber\x00'
@@ -424,7 +454,7 @@ class ZK(object):
 
     def get_platform(self):
         """
-        return the platform name
+        :return: the platform name
         """
         command = const.CMD_OPTIONS_RRQ
         command_string = b'~Platform\x00'
@@ -440,7 +470,7 @@ class ZK(object):
 
     def get_mac(self):
         """
-        return the mac
+        :return: the machine's mac address
         """
         command = const.CMD_OPTIONS_RRQ
         command_string = b'MAC\x00'
@@ -456,6 +486,8 @@ class ZK(object):
     def get_device_name(self):
         """
         return the device name
+
+        :return: str
         """
         command = const.CMD_OPTIONS_RRQ
         command_string = b'~DeviceName\x00'
@@ -470,7 +502,7 @@ class ZK(object):
 
     def get_face_version(self):
         """
-        return the face version
+        :return: the face version
         """
         command = const.CMD_OPTIONS_RRQ
         command_string = b'ZKFaceVersion\x00'
@@ -485,7 +517,7 @@ class ZK(object):
 
     def get_fp_version(self):
         """
-        return the fingerprint version
+        :return: the fingerprint version
         """
         command = const.CMD_OPTIONS_RRQ
         command_string = b'~ZKFPVersion\x00'
@@ -573,6 +605,9 @@ class ZK(object):
             return None
 
     def get_network_params(self):
+        """
+        get network params
+        """
         ip = self.__address[0]
         mask = b''
         gate = b''
@@ -589,7 +624,7 @@ class ZK(object):
 
     def get_pin_width(self):
         """
-        return the serial number
+        :return: the PIN width
         """
         command = const.CMD_GET_PINWIDTH
         command_string = b' P'
@@ -604,6 +639,8 @@ class ZK(object):
     def free_data(self):
         """
         clear buffer
+
+        :return: bool
         """
         command = const.CMD_FREE_DATA
         cmd_response = self.__send_command(command)
@@ -614,7 +651,7 @@ class ZK(object):
 
     def read_sizes(self):
         """
-        read sizes
+        read the memory ussage
         """
         command = const.CMD_GET_FREE_SIZES
         response_size = 1024
@@ -646,9 +683,11 @@ class ZK(object):
 
     def unlock(self, time=3):
         """
-        :param time: define time in seconds
-        :return:
+        unlock the door\n
         thanks to https://github.com/SoftwareHouseMerida/pyzk/
+
+        :param time: define delay in seconds
+        :return: bool
         """
         command = const.CMD_UNLOCK
         command_string = pack("I",int(time)*10)
@@ -673,6 +712,8 @@ class ZK(object):
     def restart(self):
         """
         restart the device
+
+        :return: bool
         """
         command = const.CMD_RESTART
         cmd_response = self.__send_command(command)
@@ -685,7 +726,7 @@ class ZK(object):
 
     def get_time(self):
         """
-        get Device Time
+        :return: the machine's time
         """
         command = const.CMD_GET_TIME
         response_size = 1032
@@ -698,6 +739,8 @@ class ZK(object):
     def set_time(self, timestamp):
         """
         set Device time (pass datetime object)
+
+        :param timestamp: python datetime object
         """
         command = const.CMD_SET_TIME
         command_string = pack(b'I', self.__encode_time(timestamp))
@@ -709,7 +752,7 @@ class ZK(object):
 
     def poweroff(self):
         """
-        shutdown the device
+        shutdown the machine
         """
         command = const.CMD_POWEROFF
         command_string = b''
@@ -723,9 +766,6 @@ class ZK(object):
             raise ZKErrorResponse("can't poweroff")
 
     def refresh_data(self):
-        """
-        shutdown the device
-        """
         command = const.CMD_REFRESHDATA
         cmd_response = self.__send_command(command)
         if cmd_response.get('status'):
@@ -735,82 +775,77 @@ class ZK(object):
 
     def test_voice(self, index=0):
         """
-        play test voice:
-         0 Thank You
-         1 Incorrect Password
-         2 Access Denied
-         3 Invalid ID
-         4 Please try again
-         5 Re-enter ID
-         6 The clock is full
-         7 The clock is full
-         8 Duplicate finger
-         9 Accepted. Thank you
-         10 beep kuko
-         11 beep siren
-         12 -
-         13 beep bell
+        play test voice:\n
+         0 Thank You\n
+         1 Incorrect Password\n
+         2 Access Denied\n
+         3 Invalid ID\n
+         4 Please try again\n
+         5 Re-enter ID\n
+         6 The clock is full\n
+         7 The clock is full\n
+         8 Duplicate finger\n
+         9 Accepted. Thank you\n
+         10 beep kuko\n
+         11 beep siren\n
+         12 -\n
+         13 beep bell\n
+         \t HELP! TRANSLATE TO ENGLISH THE FOLLOWING ITEMS\n
+         14 excedido tiempo p esta operacion\n
+         15 coloque su dedo de nuevo\n
+         16 coloque su dedo por ultima vez\n
+         17 ATN numero de tarjeta está repetida\n
+         18 proceso de registro correcto\n
+         19 borrado correcto\n
+         20 Numero de usuario / ponga la caja de ojos\n
+         21 ATN se ha llegado al max num usuarios\n
+         22 verificacion de usuarios\n
+         23 usuario no registrado\n
+         24 ATN se ha llegado al num max de registros\n
+         25 ATN la puerta no esta cerrada\n
+         26 registro de usuarios\n
+         27 borrado de usuarios\n
+         28 coloque su dedo\n
+         29 registre la tarjeta de administrador\n
+         30 0\n
+         31 1\n
+         32 2\n
+         33 3\n
+         34 4\n
+         35 5\n
+         36 6\n
+         37 7\n
+         38 8\n
+         39 9\n
+         40 PFV seleccione numero de usuario\n
+         41 registrar\n
+         42 operacion correcta\n
+         43 PFV acerque su tarjeta\n
+         43 la tarjeta ha sido registrada\n
+         45 error en operacion\n
+         46 PFV acerque tarjeta de administracion, p confirmacion\n
+         47 descarga de fichajes\n
+         48 descarga de usuarios\n
+         49 carga de usuarios\n
+         50 actualizan de firmware\n
+         51 ejeuctar ficheros de configuracion\n
+         52 confirmación de clave de acceso correcta\n
+         53 error en operacion de tclado\n
+         54 borrar todos los usuarios\n
+         55 restaurar terminal con configuracion por defecto\n
+         56 introduzca numero de usuario\n
+         57 teclado bloqueado\n
+         58 error en la gestión de la tarjeta\n
+         59 establezca una clave de acceso\n
+         60 pulse el teclado\n
+         61 zona de accceso invalida\n
+         62 acceso combinado invĺlido\n
+         63 verificación multiusuario\n
+         64 modo de verificación inválido\n
+         65 -\n
 
-         /*
-           **
-           ***
-           HELP! TRANSLATE TO ENGLISH THE FOLLOWING ITEMS
-           ***
-           **
-           *
-         */
-         14 excedido tiempo p esta operacion  /-
-         15 coloque su dedo de nuevo  /-
-         16 coloque su dedo por ultima vez  /-
-         17 ATN numero de tarjeta está repetida  /-
-         18 proceso de registro correcto *  /-
-         19 borrado correcto /-
-         20 Numero de usuario / ponga la caja de ojos
-         21 ATN se ha llegado al max num usuarios /-
-         22 verificacion de usuarios /-
-         23 usuario no registrado /-
-         24 ATN se ha llegado al num max de registros /-
-         25 ATN la puerta no esta cerrada /-
-         26 registro de usuarios /-
-         27 borrado de usuarios /-
-         28 coloque su dedo  /-
-         29 registre la tarjeta de administrador /-
-         30 0 /-
-         31 1 /-
-         32 2 /-
-         33 3 /-
-         34 4 /-
-         35 5 /-
-         36 6 /-
-         37 7 /-
-         38 8 /-
-         39 9 /-
-         40 PFV seleccione numero de usuario /-
-         41 registrar /-
-         42 operacion correcta /-
-         43 PFV acerque su tarjeta /-
-         43 la tarjeta ha sido registrada /-
-         45 error en operacion /-
-         46 PFV acerque tarjeta de administracion, p confirmacion /-
-         47 descarga de fichajes /-
-         48 descarga de usuarios /-
-         49 carga de usuarios /-
-         50 actualizan de firmware /-
-         51 ejeuctar ficheros de configuracion /-
-         52 confirmación de clave de acceso correcta /-
-         53 error en operacion de tclado /-
-         54 borrar todos los usuarios /-
-         55 restaurar terminal con configuracion por defecto /-
-         56 introduzca numero de usuario /-
-         57 teclado bloqueado /-
-         58 error en la gestión de la tarjeta  /-
-         59 establezca una clave de acceso /-
-         60 pulse el teclado  /-
-         61 zona de accceso invalida /-
-         62 acceso combinado invĺlido /-
-         63 verificación multiusuario /-
-         64 modo de verificación inválido /-
-         65 - /-
+        :param index: int sound index
+        :return: bool
         """
         command = const.CMD_TESTVOICE
         command_string = pack("I", index)
@@ -823,6 +858,14 @@ class ZK(object):
     def set_user(self, uid=None, name='', privilege=0, password='', group_id='', user_id='', card=0):
         """
         create or update user by uid
+
+        :param name: name ot the user
+        :param privilege: check the const.py for reference
+        :param password: int password
+        :param group_id: group ID
+        :param user_id: your own user ID
+        :param card: card
+        :return: bool
         """
         command = const.CMD_USER_WRQ
         if uid is None:
@@ -859,7 +902,12 @@ class ZK(object):
             self.next_user_id = str(self.next_uid)
 
     def save_user_template(self, user, fingers=[]):
-        """ save user and template """
+        """
+        save user and template
+
+        :param user: user
+        :param fingers: list of finger. (The maximum index 0-9)
+        """
         if not isinstance(user, User):
             users = self.get_users()
             tusers = list(filter(lambda x: x.uid==user, users))
@@ -925,7 +973,10 @@ class ZK(object):
     def delete_user_template(self, uid=0, temp_id=0, user_id=''):
         """
         Delete specific template
-        for tcp via user_id:
+
+        :param uid: user ID that are generated from device
+        :param user_id: your own user ID
+        :return: bool
         """
         if self.tcp and user_id:
             command = 134
@@ -952,6 +1003,10 @@ class ZK(object):
     def delete_user(self, uid=0, user_id=''):
         """
         delete specific user by uid or user_id
+
+        :param uid: user ID that are generated from device
+        :param user_id: your own user ID
+        :return: bool
         """
         if not uid:
             users = self.get_users()
@@ -970,10 +1025,9 @@ class ZK(object):
 
     def get_user_template(self, uid, temp_id=0, user_id=''):
         """
-        ZKFinger VX10.0
-        for tcp:
-        command = const.CMD_USERTEMP_RRQ (doesn't work always)
-        command_string = pack('hb', uid, temp_id)
+        :param uid: user ID that are generated from device
+        :param user_id: your own user ID
+        :return: list Finger object of the selected user
         """
         if not uid:
             users = self.get_users()
@@ -999,7 +1053,7 @@ class ZK(object):
 
     def get_templates(self):
         """
-        return array of all fingers
+        :return: list of Finger object
         """
         self.read_sizes()
         if self.fingers == 0:
@@ -1023,7 +1077,9 @@ class ZK(object):
         return templates
 
     def get_users(self):
-        """ return all user """
+        """
+        :return: list of User object
+        """
         self.read_sizes()
         if self.users == 0:
             self.next_uid = 1
@@ -1083,6 +1139,8 @@ class ZK(object):
     def cancel_capture(self):
         """
         cancel capturing finger
+
+        :return: bool
         """
         command = const.CMD_CANCELCAPTURE
         cmd_response = self.__send_command(command)
@@ -1091,6 +1149,8 @@ class ZK(object):
     def verify_user(self):
         """
         start verify finger mode (after capture)
+
+        :return: bool
         """
         command = const.CMD_STARTVERIFY
         cmd_response = self.__send_command(command)
@@ -1120,7 +1180,11 @@ class ZK(object):
     def enroll_user(self, uid=0, temp_id=0, user_id=''):
         """
         start enroll user
-        we need user_id (uid2)
+
+        :param uid: uid
+        :param temp_id: template id
+        :param user_id: user ID
+        :return: bool
         """
         command = const.CMD_STARTENROLL
         done = False
@@ -1209,7 +1273,9 @@ class ZK(object):
         return done
 
     def live_capture(self, new_timeout=10):
-        """ try live capture of events"""
+        """
+        try live capture of events
+        """
         was_enabled = self.is_enabled
         users = self.get_users()
         self.cancel_capture()
@@ -1277,7 +1343,9 @@ class ZK(object):
 
     def clear_data(self):
         """
-        clear all data (include: user, attendance report, finger database )
+        clear all data (included: user, attendance report, finger database)
+
+        :return: bool
         """
         command = const.CMD_CLEAR_DATA
         command_string = ''
@@ -1484,6 +1552,8 @@ class ZK(object):
     def get_attendance(self):
         """
         return attendance record
+
+        :return: List of Attendance object
         """
         self.read_sizes()
         if self.records == 0:
@@ -1548,6 +1618,8 @@ class ZK(object):
     def clear_attendance(self):
         """
         clear all attendance record
+
+        :return: bool
         """
         command = const.CMD_CLEAR_ATTLOG
         cmd_response = self.__send_command(command)
