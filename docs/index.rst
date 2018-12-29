@@ -3,17 +3,32 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+.. toctree::
+   :hidden:
+   :maxdepth: 4
+   :caption: Home Page
+   :name: index
+
+   topic1
+   topic2
+   topic3
+   topic4
+   topic5
+   compatible_devices
+
+
 ********************************
 Welcome to pyzk's documentation!
 ********************************
 
-pyzk is an unofficial library of zksoftware the fingerprint attendance machine. It's easy to use and no need to understand how to communicate to device. Just create ZK instance and you will ready to use api.
+pyzk is an unofficial library of zksoftware (zkzteco family) the fingerprint attendance machine. It's easy to use and no need to understand how to communicate to device.
+
+.. image:: https://travis-ci.org/fananimi/pyzk.svg?branch=master
+    :target: https://travis-ci.org/fananimi/pyzk
 
 Installation
 ############
 
-.. image:: https://travis-ci.org/fananimi/pyzk.svg?branch=master
-    :target: https://travis-ci.org/fananimi/pyzk
 
 You can install from two different options
 
@@ -24,7 +39,7 @@ You can install from two different options
 
 2. from original repository
 
-Go to https://github.com/fananimi/pyzk and clone the latest source code by using git, and then just execute the setup.py file.
+Go to `repository <//github.com/fananimi/pyzk>`_ then clone the latest source code by using git, and then just execute the setup.py file.
 
 
  ``$ python setup.py install``
