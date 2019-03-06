@@ -889,7 +889,7 @@ class ZK(object):
                 raise ZKErrorResponse("Can't pack user")
         else:
             name_pad = name.encode(self.encoding, errors='ignore').ljust(24, b'\x00')[:24]
-            card_str = pack('i', int(card))[:4]
+            card_str = pack('<I', int(card))[:4]
             command_string = pack('HB8s24s4sx7sx24s', uid, privilege, password.encode(self.encoding, errors='ignore'), name_pad, card_str, group_id.encode(), user_id.encode())
         response_size = 1024 #TODO check response?
         cmd_response = self.__send_command(command, command_string, response_size)
@@ -1627,4 +1627,3 @@ class ZK(object):
             return True
         else:
             raise ZKErrorResponse("Can't clear response")
-
