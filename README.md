@@ -413,6 +413,10 @@ DeviceName : K20 (latest checked correctly!)
 Firmware Version : Ver 6.60 Aug 23 2014 
 Platform : ZEM600_TFT
 DeviceName : VF680 (face device only, but we read the user and attendance list!)
+
+Firmware Version : Ver 6.70 Feb 16 2017
+Platform : ZLM30_TFT
+DeviceName : RSP10k1 (latest checked correctly!)
 ```
 
 
