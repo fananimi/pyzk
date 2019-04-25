@@ -190,75 +190,57 @@ conn.clear_attendance()
   2 Access Denied
   3 Invalid ID
   4 Please try again
-  5 Re-enter ID
-  6 The clock is full
+  5 Dupicate ID
+  6 The clock is flow
   7 The clock is full
   8 Duplicate finger
-  9 Accepted. Thank you
-  10 beep kuko
-  11 beep siren
+  9 Duplicated punch
+  10 Beep kuko
+  11 Beep siren
   12 -
-  13 beep bell
-  /*
-    **
-    ***
-    HELP! TRANSLATE TO ENGLISH THE FOLLOWING ITEMS
-    ***
-    **
-    *
-  */
-  14 excedido tiempo p esta operacion  /-
-  15 coloque su dedo de nuevo  /-
-  16 coloque su dedo por ultima vez  /-
-  17 ATN numero de tarjeta está repetida  /-
-  18 proceso de registro correcto *  /-
-  19 borrado correcto /-
-  20 Numero de usuario / ponga la caja de ojos
-  21 ATN se ha llegado al max num usuarios /-
-  22 verificacion de usuarios /-
-  23 usuario no registrado /-
-  24 ATN se ha llegado al num max de registros /-
-  25 ATN la puerta no esta cerrada /-
-  26 registro de usuarios /-
-  27 borrado de usuarios /-
-  28 coloque su dedo  /-
-  29 registre la tarjeta de administrador /-
-  30 0 /-
-  31 1 /-
-  32 2 /-
-  33 3 /-
-  34 4 /-
-  35 5 /-
-  36 6 /-
-  37 7 /-
-  38 8 /-
-  39 9 /-
-  40 PFV seleccione numero de usuario /-
-  41 registrar /-
-  42 operacion correcta /-
-  43 PFV acerque su tarjeta /-
-  43 la tarjeta ha sido registrada /-
-  45 error en operacion /-
-  46 PFV acerque tarjeta de administracion, p confirmacion /-
-  47 descarga de fichajes /-
-  48 descarga de usuarios /-
-  49 carga de usuarios /-
-  50 actualizan de firmware /-
-  51 ejeuctar ficheros de configuracion /-
-  52 confirmación de clave de acceso correcta /-
-  53 error en operacion de tclado /-
-  54 borrar todos los usuarios /-
-  55 restaurar terminal con configuracion por defecto /-
-  56 introduzca numero de usuario /-
-  57 teclado bloqueado /-
-  58 error en la gestión de la tarjeta  /-
-  59 establezca una clave de acceso /-
-  60 pulse el teclado  /-
-  61 zona de accceso invalida /-
-  62 acceso combinado invĺlido /-
-  63 verificación multiusuario /-
-  64 modo de verificación inválido /-
-  65 - /-
+  13 Beep bell
+  14 -
+  15 -
+  16 -
+  17 -
+  18 Windows(R) opening sound
+  19 -
+  20 Fingerprint not emolt
+  21 Password not emolt
+  22 Badges not emolt
+  23 Face not emolt
+  24 Beep standard
+  25 -
+  26 -
+  27 -
+  28 -
+  29 -
+  30 Invalid user
+  31 Invalid time period
+  32 Invalid combination
+  33 Illegal Access
+  34 Disk space full
+  35 Duplicate fingerprint
+  36 Fingerprint not registered
+  37 -
+  38 -
+  39 -
+  40 -
+  41 -
+  42 -
+  43 -
+  43 -
+  45 -
+  46 -
+  47 -
+  48 -
+  49 -
+  50 -
+  51 Focus eyes on the green box
+  52 -
+  53 -
+  54 -
+  55 -
 """
 conn.test_voice(index=0) # will say 'Thank You'
 ```
