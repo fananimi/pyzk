@@ -13,8 +13,11 @@ conn = None
 zk = ZK('192.168.2.201', port=4370)
 try:
     conn = zk.connect()
-    print ("Shutdown the device...")
-    conn.poweroff()
+    for attendance in conn.live_capture():
+        if attendance is None:
+            pass
+        else:
+            print (attendance)
 except Exception as e:
     print ("Process terminate : {}".format(e))
 finally:
