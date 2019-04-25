@@ -781,68 +781,57 @@ class ZK(object):
          2 Access Denied\n
          3 Invalid ID\n
          4 Please try again\n
-         5 Re-enter ID\n
-         6 The clock is full\n
+         5 Dupicate ID\n
+         6 The clock is flow\n
          7 The clock is full\n
          8 Duplicate finger\n
-         9 Accepted. Thank you\n
-         10 beep kuko\n
-         11 beep siren\n
+         9 Duplicated punch\n
+         10 Beep kuko\n
+         11 Beep siren\n
          12 -\n
-         13 beep bell\n
-         \t HELP! TRANSLATE TO ENGLISH THE FOLLOWING ITEMS\n
-         14 excedido tiempo p esta operacion\n
-         15 coloque su dedo de nuevo\n
-         16 coloque su dedo por ultima vez\n
-         17 ATN numero de tarjeta está repetida\n
-         18 proceso de registro correcto\n
-         19 borrado correcto\n
-         20 Numero de usuario / ponga la caja de ojos\n
-         21 ATN se ha llegado al max num usuarios\n
-         22 verificacion de usuarios\n
-         23 usuario no registrado\n
-         24 ATN se ha llegado al num max de registros\n
-         25 ATN la puerta no esta cerrada\n
-         26 registro de usuarios\n
-         27 borrado de usuarios\n
-         28 coloque su dedo\n
-         29 registre la tarjeta de administrador\n
-         30 0\n
-         31 1\n
-         32 2\n
-         33 3\n
-         34 4\n
-         35 5\n
-         36 6\n
-         37 7\n
-         38 8\n
-         39 9\n
-         40 PFV seleccione numero de usuario\n
-         41 registrar\n
-         42 operacion correcta\n
-         43 PFV acerque su tarjeta\n
-         43 la tarjeta ha sido registrada\n
-         45 error en operacion\n
-         46 PFV acerque tarjeta de administracion, p confirmacion\n
-         47 descarga de fichajes\n
-         48 descarga de usuarios\n
-         49 carga de usuarios\n
-         50 actualizan de firmware\n
-         51 ejeuctar ficheros de configuracion\n
-         52 confirmación de clave de acceso correcta\n
-         53 error en operacion de tclado\n
-         54 borrar todos los usuarios\n
-         55 restaurar terminal con configuracion por defecto\n
-         56 introduzca numero de usuario\n
-         57 teclado bloqueado\n
-         58 error en la gestión de la tarjeta\n
-         59 establezca una clave de acceso\n
-         60 pulse el teclado\n
-         61 zona de accceso invalida\n
-         62 acceso combinado invĺlido\n
-         63 verificación multiusuario\n
-         64 modo de verificación inválido\n
-         65 -\n
+         13 Beep bell\n
+         14 -\n
+         15 -\n
+         16 -\n
+         17 -\n
+         18 Windows(R) opening sound\n
+         19 -\n
+         20 Fingerprint not emolt\n
+         21 Password not emolt\n
+         22 Badges not emolt\n
+         23 Face not emolt\n
+         24 Beep standard\n
+         25 -\n
+         26 -\n
+         27 -\n
+         28 -\n
+         29 -\n
+         30 Invalid user\n
+         31 Invalid time period\n
+         32 Invalid combination\n
+         33 Illegal Access\n
+         34 Disk space full\n
+         35 Duplicate fingerprint\n
+         36 Fingerprint not registered\n
+         37 -\n
+         38 -\n
+         39 -\n
+         40 -\n
+         41 -\n
+         42 -\n
+         43 -\n
+         43 -\n
+         45 -\n
+         46 -\n
+         47 -\n
+         48 -\n
+         49 -\n
+         50 -\n
+         51 Focus eyes on the green box\n
+         52 -\n
+         53 -\n
+         54 -\n
+         55 -\n
 
         :param index: int sound index
         :return: bool
