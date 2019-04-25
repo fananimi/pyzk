@@ -5,7 +5,12 @@ import sys
 import os
 import unittest
 import codecs
-from mock import patch, Mock, MagicMock
+
+if sys.version_info[0] < 3:
+    from mock import patch, Mock, MagicMock
+else:
+    from unittest.mock import patch, Mock, MagicMock
+    
 mock_socket = MagicMock(name='zk.socket')
 sys.modules['zk.socket'] = mock_socket
 from zk import ZK, const

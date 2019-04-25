@@ -5,11 +5,11 @@ from socket import AF_INET, SOCK_DGRAM, SOCK_STREAM, socket, timeout
 from struct import pack, unpack
 import codecs
 
-from zk import const
-from zk.attendance import Attendance
-from zk.exception import ZKErrorConnection, ZKErrorResponse, ZKNetworkError
-from zk.user import User
-from zk.finger import Finger
+from . import const
+from .attendance import Attendance
+from .exception import ZKErrorConnection, ZKErrorResponse, ZKNetworkError
+from .user import User
+from .finger import Finger
 
 
 def safe_cast(val, to_type, default=None):
@@ -302,7 +302,7 @@ class ZK(object):
 
     def __reverse_hex(self, hex):
         data = ''
-        for i in reversed(xrange(len(hex) / 2)):
+        for i in reversed(range(len(hex) / 2)):
             data += hex[i * 2:(i * 2) + 2]
         return data
 
@@ -878,7 +878,7 @@ class ZK(object):
                 raise ZKErrorResponse("Can't pack user")
         else:
             name_pad = name.encode(self.encoding, errors='ignore').ljust(24, b'\x00')[:24]
-            card_str = pack('i', int(card))[:4]
+            card_str = pack('<I', int(card))[:4]
             command_string = pack('HB8s24s4sx7sx24s', uid, privilege, password.encode(self.encoding, errors='ignore'), name_pad, card_str, group_id.encode(), user_id.encode())
         response_size = 1024 #TODO check response?
         cmd_response = self.__send_command(command, command_string, response_size)
@@ -1616,4 +1616,3 @@ class ZK(object):
             return True
         else:
             raise ZKErrorResponse("Can't clear response")
-
