@@ -17,11 +17,11 @@
    compatible_devices
 
 
-********************************
-Welcome to pyzk's documentation!
-********************************
+******************
+pyzk Documentation
+******************
 
-pyzk is an unofficial library of zksoftware (zkzteco family) the fingerprint attendance machine. It's easy to use and no need to understand how to communicate to device.
+**pyzk** is an unofficial library of zksoftware (zkzteco family) a biometric attendance machine. It's easy to use and no need to understand how to communicate to device.
 
 .. image:: https://travis-ci.org/fananimi/pyzk.svg?branch=master
     :target: https://travis-ci.org/fananimi/pyzk
@@ -53,7 +53,7 @@ Basic Usage
     from zk import ZK, const
 
     conn = None
-    zk = ZK('192.168.1.10', port=4370, timeout=5)
+    zk = ZK('192.168.1.201', port=4370, timeout=5)
     try:
         print 'Connecting to device ...'
         conn = zk.connect()
@@ -88,7 +88,7 @@ Basic Usage
 Technical Documentation
 #######################
 
-We open to everyone for contribute in this project. Please refer `Communication_protocol_manual_CMD.pdf <https://github.com/fananimi/pyzk/blob/master/docs/_static/Communication_protocol_manual_CMD.pdf>`_ before you starting write your code.
+We open to everyone to contribute on this project. Please refer `Communication_protocol_manual_CMD.pdf <https://github.com/fananimi/pyzk/blob/master/docs/_static/Communication_protocol_manual_CMD.pdf>`_ before you start writing the code.
 
 
 Indices and tables
