@@ -882,6 +882,7 @@ class ZK(object):
             command_string = pack('HB8s24s4sx7sx24s', uid, privilege, password.encode(self.encoding, errors='ignore'), name_pad, card_str, group_id.encode(), user_id.encode())
         response_size = 1024 #TODO check response?
         cmd_response = self.__send_command(command, command_string, response_size)
+        if self.verbose: print("Response: %s" % cmd_response)
         if not cmd_response.get('status'):
             raise ZKErrorResponse("Can't set user")
         self.refresh_data()
@@ -1340,7 +1341,6 @@ class ZK(object):
         command_string = ''
         cmd_response = self.__send_command(command, command_string)
         if cmd_response.get('status'):
-            self.is_connect = False
             self.next_uid = 1
             return True
         else:
