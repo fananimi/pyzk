@@ -5,7 +5,7 @@ class User(object):
 
     def __init__(self, uid, name, privilege, password='', group_id='', user_id='', card=0):
         self.uid = uid
-        self.name = str(name)
+        self.name = u'{0}'.format(name)
         self.privilege = privilege
         self.password = str(password)
         self.group_id = str(group_id)
