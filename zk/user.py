@@ -5,7 +5,7 @@ class User(object):
 
     def __init__(self, uid, name, privilege, password='', group_id='', user_id='', card=0):
         self.uid = uid
-        self.name = str(name)
+        self.name = u'{0}'.format(name)
         self.privilege = privilege
         self.password = str(password)
         self.group_id = str(group_id)
@@ -34,7 +34,7 @@ class User(object):
         return pack("<BHB8s24sIB7sx24s", 2, self.uid, self.privilege,self.password.encode(User.encoding, errors='ignore'), self.name.encode(User.encoding, errors='ignore'), self.card, 1, str(self.group_id).encode(User.encoding, errors='ignore'), str(self.user_id).encode(User.encoding, errors='ignore'))
 
     def __str__(self):
-        return '<User>: [uid:{}, name:{} user_id:{}]'.format(self.uid, self.name, self.user_id)
+        return u'<User>: [uid:{}, name:{} user_id:{}]'.format(self.uid, self.name, self.user_id)
 
     def __repr__(self):
-        return '<User>: [uid:{}, name:{} user_id:{}]'.format(self.uid, self.name, self.user_id)
+        return u'<User>: [uid:{}, name:{} user_id:{}]'.format(self.uid, self.name, self.user_id)
