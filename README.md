@@ -399,6 +399,10 @@ DeviceName : VF680 (face device only, but we read the user and attendance list!)
 Firmware Version : Ver 6.70 Feb 16 2017
 Platform : ZLM30_TFT
 DeviceName : RSP10k1 (latest checked correctly!)
+
+Firmware Version : Ver 6.60 Jun 16 2015
+Platform : JZ4725_TFT
+DeviceName : K14 (tested & verified working as expected.)
 ```
 
 
@@ -409,10 +413,6 @@ DeviceName : RSP10k1 (latest checked correctly!)
 Firmware Version : Ver 6.60 Jun 16 2015
 Platform : JZ4725_TFT
 DeviceName : iClock260
-
-Firmware Version : Ver 6.60 Jun 16 2015
-Platform : JZ4725_TFT
-DeviceName : K14 (not tested, but same behavior like the other one)
 
 Firmware Version : Ver 6.60 Jun 5 2015
 Platform : ZMM200_TFT
