@@ -1013,7 +1013,7 @@ class ZK(object):
         if uid == (self.next_uid - 1):
             self.next_uid = uid
 
-    def get_user_template(self, uid, temp_id=0, user_id=''):
+    def get_user_template(self, uid = '', temp_id=0, user_id=''):
         """
         :param uid: user ID that are generated from device
         :param user_id: your own user ID
