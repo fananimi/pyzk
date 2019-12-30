@@ -1338,7 +1338,7 @@ class ZK(object):
         :return: bool
         """
         command = const.CMD_CLEAR_DATA
-        command_string = ''
+        command_string = b''
         cmd_response = self.__send_command(command, command_string)
         if cmd_response.get('status'):
             self.next_uid = 1
