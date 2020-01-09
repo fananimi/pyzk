@@ -403,6 +403,10 @@ DeviceName : RSP10k1 (latest checked correctly!)
 Firmware Version : Ver 6.60 Jun 16 2015
 Platform : JZ4725_TFT
 DeviceName : K14 (tested & verified working as expected.)
+
+Firmware Version : Ver 6.60 Jan 13 2016
+Platform         : ZMM220_TFT
+DeviceName       : iFace702 (without voice function, test with encoding='gbk')
 ```
 
 
