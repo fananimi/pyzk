@@ -2,7 +2,7 @@ Changelog
 =========
 Version 0.9
 -----------
-* Initial Python 3 Support
+* Python 3 Support
 * major changes
 
 Version 0.8
