@@ -17,7 +17,7 @@ Steps to reproduce the behavior:
 A clear and concise description of what you expected to happen.
 
 **Capture Data**
-Try to always include captured data (pcap files from wireshark [(tutorial)](https://youtu.be/AsDedCgkhnA), and verbose output from test_machine if applicable)
+Try to always include captured data ([pcap](https://imgur.com/a/5999nMl) files from wireshark [(tutorial)](https://youtu.be/AsDedCgkhnA), and verbose output from test_machine if applicable)
 
 **System (please complete the following information):**
  - OS: [e.g. iOS, Debian 9]
