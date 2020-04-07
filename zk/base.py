@@ -696,6 +696,17 @@ class ZK(object):
             return True
         else:
             raise ZKErrorResponse("Can't open door")
+    def get_lock_state(self):
+        '''
+        :return: boolean
+        thanks to https://github.com/icarome/pyzk/
+        '''
+        command = const.CMD_DOORSTATE_RRQ
+        cmd_response = self.__send_command(command)
+        if cmd_response.get('status'):
+            return True
+        else:
+            return False
 
     def __str__(self):
         """
