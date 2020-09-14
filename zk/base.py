@@ -1601,7 +1601,10 @@ class ZK(object):
 
                 attendance = Attendance(user_id, timestamp, status, punch, uid)
                 attendances.append(attendance)
-                attendance_data = attendance_data[40:]
+                if record_size == 49:
+                    attendance_data = attendance_data[49:]
+                else:
+                    attendance_data = attendance_data[40:]
         return attendances
 
     def clear_attendance(self):
