@@ -735,6 +735,31 @@ class ZK(object):
         else:
             raise ZKErrorResponse("can't restart device")
 
+    def write_lcd(self, line_number, text):
+        """
+        write text to LCD
+        :param line_number: line number
+        :param text: text to write
+        """
+        command = const.CMD_WRITE_LCD
+        command_string = pack(b'<hb', line_number, 0) + b' ' + text.encode(self.encoding, errors='ignore')
+        cmd_response = self.__send_command(command, command_string)
+        if cmd_response.get('status'):
+            return True
+        else:
+            raise ZKErrorResponse("can't write lcd")
+
+    def clear_lcd(self):
+        """
+        clear LCD
+        """
+        command = const.CMD_CLEAR_LCD
+        cmd_response = self.__send_command(command)
+        if cmd_response.get('status'):
+            return True
+        else:
+            raise ZKErrorResponse("can't clear lcd")
+
     def get_time(self):
         """
         :return: the machine's time
