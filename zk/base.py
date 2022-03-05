@@ -1582,28 +1582,31 @@ class ZK(object):
         ) -> dict:
         attendances = self.get_attendance()
         history = {}
-        
+
         def key_func(k):
+            """Returns the UID of each Attendances as a key."""
             return k()[0]
 
         if date_to_date == None:
             _attendances = sorted(attendances, key=key_func)
+            j = 0
             for k, g in groupby(_attendances, key_func):
                 '''Group by Attendance ID'''
 
                 if k in list(map(str, users)) or users == []:
-                    '''Select the corespond users by their IDs'''
+                    '''Select the corresponding users by their IDs'''
 
                     history[f'Attendance {k}'] = list(g)  
                     for i, _ in enumerate(history[f'Attendance {k}']): 
                         '''Select datetime, status, and punch from the tupple.'''
-                        history[f'Attendance {k}'][i] = _attendances[i]()[1:]
+                        history[f'Attendance {k}'][i] = _attendances[i + j]()[1:]
+                    j += i + 1
         else:
             raise NotImplementedError()
         
         return history
 
-    def get_attendance(self):
+    def get_attendance(self, date_to_date: tuple = None):
         """
         return attendance record
 
