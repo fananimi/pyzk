@@ -1592,8 +1592,8 @@ class ZK(object):
                 '''Group by Attendance ID'''
                 history[f'Attendance {k}'] = list(g)  
                 for i, _ in enumerate(history[f'Attendance {k}']): 
-                    '''Select only date time from the tupple.'''
-                    history[f'Attendance {k}'][i] = _attendances[i]()[1]
+                    '''Select datetime, status, and punch from the tupple.'''
+                    history[f'Attendance {k}'][i] = _attendances[i]()[1:]
         else:
             raise NotImplementedError()
         
