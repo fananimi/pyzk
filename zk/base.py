@@ -6,6 +6,7 @@ from datetime import datetime
 from socket import AF_INET, SOCK_DGRAM, SOCK_STREAM, socket, timeout
 from struct import pack, unpack
 from itertools import groupby
+from typing import Union
 
 from . import const
 from .attendance import Attendance
@@ -1577,7 +1578,7 @@ class ZK(object):
         return b''.join(data), start
 
     def get_user_history(
-        self, user: list[str] = [], date_to_date: tuple = None
+        self, users: list[Union[str, int]] = [], date_to_date: tuple = None
         ) -> dict:
         attendances = self.get_attendance()
         history = {}
@@ -1585,15 +1586,18 @@ class ZK(object):
         def key_func(k):
             return k()[0]
 
-        if (user, date_to_date) == ([], None):
+        if date_to_date == None:
             _attendances = sorted(attendances, key=key_func)
-            print(_attendances[5]())
             for k, g in groupby(_attendances, key_func):
                 '''Group by Attendance ID'''
-                history[f'Attendance {k}'] = list(g)  
-                for i, _ in enumerate(history[f'Attendance {k}']): 
-                    '''Select datetime, status, and punch from the tupple.'''
-                    history[f'Attendance {k}'][i] = _attendances[i]()[1:]
+
+                if k in list(map(str, users)) or users == []:
+                    '''Select the corespond users by their IDs'''
+
+                    history[f'Attendance {k}'] = list(g)  
+                    for i, _ in enumerate(history[f'Attendance {k}']): 
+                        '''Select datetime, status, and punch from the tupple.'''
+                        history[f'Attendance {k}'][i] = _attendances[i]()[1:]
         else:
             raise NotImplementedError()
         
