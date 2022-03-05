@@ -12,3 +12,6 @@ class Attendance(object):
 
     def __repr__(self):
         return '<Attendance>: {} : {} ({}, {})'.format(self.user_id, self.timestamp,self.status, self.punch)
+
+    def __call__(self):
+        return (self.user_id, self.timestamp, self.status, self.punch)

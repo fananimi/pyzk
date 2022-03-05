@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 import sys
+import codecs
+
 from datetime import datetime
 from socket import AF_INET, SOCK_DGRAM, SOCK_STREAM, socket, timeout
 from struct import pack, unpack
-import codecs
+from itertools import groupby
 
 from . import const
 from .attendance import Attendance
@@ -1573,6 +1575,29 @@ class ZK(object):
         self.free_data()
         if self.verbose: print ("_read w/chunk %i bytes" % start)
         return b''.join(data), start
+
+    def get_user_history(
+        self, user: list[str] = [], date_to_date: tuple = None
+        ) -> dict:
+        attendances = self.get_attendance()
+        history = {}
+        
+        def key_func(k):
+            return k()[0]
+
+        if (user, date_to_date) == ([], None):
+            _attendances = sorted(attendances, key=key_func)
+            print(_attendances[5]())
+            for k, g in groupby(_attendances, key_func):
+                '''Group by Attendance ID'''
+                history[f'Attendance {k}'] = list(g)  
+                for i, _ in enumerate(history[f'Attendance {k}']): 
+                    '''Select only date time from the tupple.'''
+                    history[f'Attendance {k}'][i] = _attendances[i]()[1]
+        else:
+            raise NotImplementedError()
+        
+        return history
 
     def get_attendance(self):
         """
