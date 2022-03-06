@@ -1578,8 +1578,14 @@ class ZK(object):
         return b''.join(data), start
 
     def get_user_history(
-        self, users: list[Union[str, int]] = [], date_to_date: tuple = None
-        ) -> dict:
+            self, users: list[Union[str, int]] = [], date_to_date: tuple = None
+    ) -> dict:
+        """
+        Returns the history of attendances which is grouped by their uid.
+        :param users: List of users by uid or name.
+        :param date_to_date:
+        :return: Grouped by attendances records
+        """
         attendances = self.get_attendance()
         history = {}
 
@@ -1671,6 +1677,15 @@ class ZK(object):
                 attendances.append(attendance)
                 attendance_data = attendance_data[40:]
         return attendances
+
+    def get_sorted_attendance(self, by_date: bool = False) -> list:
+        """
+        Sorting attendances record wheather by date or uid.
+        :param by_date: If it is True, means sorting by date. Else it will be sorted by
+        uid.
+        :return: Sorted records.
+        """
+        return sorted(self.get_attendance(), key=lambda x: x()[int(by_date)])
 
     def clear_attendance(self):
         """
