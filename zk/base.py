@@ -1645,13 +1645,13 @@ class ZK(object):
         return attendances
 
     def get_user_history(
-            self, users: list[Union[str, int]] = [],
-            start: datetime = None, end: datetime = None
+            self, users: list = [],
+            start=None, end=None
     ) -> dict:
         """
         Returns the history of attendances which is grouped by their uid.
 
-        :param users: List of users by uid or name.
+        :param users: List of users by uid.
         :param start: The filter starts from this datetime.
         :param end: The filter ends up to this datetime.
         :return: Grouped by attendances records
@@ -1682,7 +1682,7 @@ class ZK(object):
 
         return history
 
-    def get_sorted_attendance(self, by_date: bool = False) -> list[Attendance]:
+    def get_sorted_attendance(self, by_date: bool = False) -> list:
         """
         Sorting attendances record wheather by date or uid.
 
@@ -1693,8 +1693,8 @@ class ZK(object):
         return sorted(self.get_attendance(), key=lambda x: x()[int(by_date)])
 
     def get_limited_attendance(
-            self, users: list[Union[str, int]] = [],
-            start: datetime = None, end: datetime = None
+            self, users: list = [],
+            start=None, end=None
     ) -> list:
         """
         Filter attendances' records with both user selection and/or datetime.
