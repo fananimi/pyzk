@@ -13,6 +13,7 @@ from .attendance import Attendance
 from .exception import ZKErrorConnection, ZKErrorResponse, ZKNetworkError
 from .user import User
 from .finger import Finger
+from .utility import Utility
 
 
 def safe_cast(val, to_type, default=None):
@@ -1577,42 +1578,7 @@ class ZK(object):
         if self.verbose: print ("_read w/chunk %i bytes" % start)
         return b''.join(data), start
 
-    def get_user_history(
-            self, users: list[Union[str, int]] = [], date_to_date: tuple = None
-    ) -> dict:
-        """
-        Returns the history of attendances which is grouped by their uid.
-        :param users: List of users by uid or name.
-        :param date_to_date:
-        :return: Grouped by attendances records
-        """
-        attendances = self.get_attendance()
-        history = {}
-
-        def key_func(k):
-            """Returns the UID of each Attendances as a key."""
-            return k()[0]
-
-        if date_to_date == None:
-            _attendances = sorted(attendances, key=key_func)
-            j = 0
-            for k, g in groupby(_attendances, key_func):
-                '''Group by Attendance ID'''
-
-                if k in list(map(str, users)) or users == []:
-                    '''Select the corresponding users by their IDs'''
-
-                    history[f'Attendance {k}'] = list(g)  
-                    for i, _ in enumerate(history[f'Attendance {k}']): 
-                        '''Select datetime, status, and punch from the tupple.'''
-                        history[f'Attendance {k}'][i] = _attendances[i + j]()[1:]
-                    j += i + 1
-        else:
-            raise NotImplementedError()
-        
-        return history
-
-    def get_attendance(self, date_to_date: tuple = None):
+    def get_attendance(self):
         """
         return attendance record
 
@@ -1678,14 +1644,80 @@ class ZK(object):
                 attendance_data = attendance_data[40:]
         return attendances
 
-    def get_sorted_attendance(self, by_date: bool = False) -> list:
+    def get_user_history(
+            self, users: list[Union[str, int]] = [],
+            start: datetime = None, end: datetime = None
+    ) -> dict:
+        """
+        Returns the history of attendances which is grouped by their uid.
+
+        :param users: List of users by uid or name.
+        :param start: The filter starts from this datetime.
+        :param end: The filter ends up to this datetime.
+        :return: Grouped by attendances records
+        """
+        attendances = self.get_attendance()
+        history = {}
+
+        def key_func(k):
+            """Returns the UID of each Attendances as a key."""
+            return k()[0]
+
+        if start is None and end is None:
+            _attendances = sorted(attendances, key=key_func)
+            j, i = 0, 0
+            for k, g in groupby(_attendances, key_func):
+                '''Group by Attendance ID'''
+
+                if k in list(map(str, users)) or users == []:
+                    '''Select the corresponding users by their IDs'''
+
+                    history[f'Attendance {k}'] = list(g)
+                    for i, _ in enumerate(history[f'Attendance {k}']):
+                        '''Select datetime, status, and punch from the tupple.'''
+                        history[f'Attendance {k}'][i] = _attendances[i + j]()[1:]
+                    j += i + 1
+        else:
+            raise NotImplementedError()
+
+        return history
+
+    def get_sorted_attendance(self, by_date: bool = False) -> list[Attendance]:
         """
         Sorting attendances record wheather by date or uid.
+
         :param by_date: If it is True, means sorting by date. Else it will be sorted by
         uid.
         :return: Sorted records.
         """
         return sorted(self.get_attendance(), key=lambda x: x()[int(by_date)])
+
+    def get_limited_attendance(
+            self, users: list[Union[str, int]] = [],
+            start: datetime = None, end: datetime = None
+    ) -> list:
+        """
+        Filter attendances' records with both user selection and/or datetime.
+
+        :param users: List of users by uid or name.
+        :param start: The filter starts from this datetime.
+        :param end: The filter ends up to this datetime.
+        :return: Limited attendances record by the respective input filters.
+        """
+        try:
+            attendances = self.get_sorted_attendance()
+
+            if users:
+                attendances = Utility.filter_by_user(attendances, users)
+            if start is not None:
+                attendances = Utility.filter_by_date(attendances, start=start)
+            if end is not None:
+                attendances = Utility.filter_by_date(attendances, end=end)
+
+            return attendances
+
+        except Exception:
+            raise ZKErrorResponse("Something went wrong!")
 
     def clear_attendance(self):
         """
