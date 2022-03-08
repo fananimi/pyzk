@@ -176,6 +176,13 @@ zk.enroll_user('1')
 ```python
 # Get attendances (will return list of Attendance object)
 attendances = conn.get_attendance()
+sorted_attendances = conn.get_sorted_attendance(by_date=False)  # means sorting by uid
+limited_attendances = conn.get_limited_attendance(
+    users=[1, 2],  # only UIDs 1, 2
+    start=datetime(2022, 1, 10, 12, 42),  # from 2022,1,10 12:42:00
+    end=datetime(2022, 1, 11)  # to 2022,1,11
+)
+
 # Clear attendances records
 conn.clear_attendance()
 ```
