@@ -107,7 +107,7 @@ conn.set_time(newtime)
 ```
 
 
-* Ger Firmware Version and Extra Information
+* Get Firmware Version and Extra Information
 
 ```python
 conn.get_firmware_version()
