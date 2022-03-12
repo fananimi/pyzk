@@ -187,6 +187,14 @@ limited_attendances = conn.get_limited_attendance(
 conn.clear_attendance()
 ```
 
+* User history
+```python
+# Get the history of users records
+hist = conn.get_user_history(
+    users=[1, 2], start_date=datetime(2022, 1, 10, 12, 42)
+)
+```
+
 * Test voice
 
 ```python
