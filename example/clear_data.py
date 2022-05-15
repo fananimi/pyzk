@@ -10,15 +10,11 @@ from zk import ZK
 
 
 conn = None
-zk = ZK('192.168.2.201', port=4370)
+zk = ZK('192.168.1.201', port=4370)
 try:
     conn = zk.connect()
-    choices = raw_input('Are you sure want to delete all data? [Y/N]: ')
-    if choices == 'Y':
-        print ("Clear all data...")
-        conn.clear_data()
-    else:
-        print ("Clear all data canceled !")
+    print ("Clear all data...")
+    conn.clear_data()
 except Exception as e:
     print ("Process terminate : {}".format(e))
 finally:

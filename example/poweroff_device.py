@@ -10,7 +10,7 @@ from zk import ZK
 
 
 conn = None
-zk = ZK('192.168.2.201', port=4370)
+zk = ZK('192.168.1.201', port=4370)
 try:
     conn = zk.connect()
     print ("Shutdown the device...")

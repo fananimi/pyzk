@@ -11,7 +11,7 @@ import zk
 print (zk.__file__)
 
 conn = None
-zk = ZK('192.168.2.201', port=4370)
+zk = ZK('192.168.1.201', port=4370)
 try:
     conn = zk.connect()
     #conn.enroll_user(uid=1)
@@ -22,6 +22,9 @@ try:
         print ("Valid    : %s" % template.valid)
         print ("Template : %s" % template.json_pack())
         print ("Mark     : %s" % template.mark)
+        if template.uid == 1:
+            with open('finger_1.bin', 'wb') as my_finger:
+                my_finger.write(template.template)
 except Exception as e:
     print ("Process terminate : {}".format(e))
 finally:

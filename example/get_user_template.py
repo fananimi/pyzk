@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 import sys
+import traceback
 
 CWD = os.path.dirname(os.path.realpath(__file__))
 ROOT_DIR = os.path.dirname(CWD)
@@ -10,7 +11,7 @@ from zk import ZK
 
 
 conn = None
-zk = ZK('192.168.2.201', port=4370)
+zk = ZK('192.168.1.201', port=4370)
 try:
     conn = zk.connect()
     template = conn.get_user_template(uid=1, user_id=1, temp_id=6)
@@ -20,8 +21,8 @@ try:
     print ("Valid    : %s" % template.valid)
     print ("Template : %s" % template.json_pack())
     print ("Mark     : %s" % template.mark)
-except Exception as e:
-    print ("Process terminate : {}".format(e))
+    with open('finger_1.bin', 'wb') as my_finger:
+        my_finger.write(template.template)
 finally:
     if conn:
         conn.disconnect()
