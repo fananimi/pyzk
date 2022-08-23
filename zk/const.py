@@ -45,6 +45,9 @@ CMD_DELETE_UDATA    = 74    # Delete user’s short message
 CMD_DOORSTATE_RRQ   = 75    # Obtain the door condition
 CMD_WRITE_MIFARE    = 76    # Write the Mifare card
 CMD_EMPTY_MIFARE    = 78    # Clear the Mifare card
+_CMD_GET_USERTEMP   = 88    # (UNDOCUMENTED!) get an specific user template (uid, fid)
+_CMD_SAVE_USERTEMPS = 110   # (UNDOCUMENTED!) save user and multiple templates!
+_CMD_DEL_USER_TEMP  = 134   # (UNDOCUMENTED!) delete an specific user template (uid, fid)
 
 CMD_GET_TIME        = 201   # Obtain the machine time
 CMD_SET_TIME        = 202   # Set machines time
@@ -70,6 +73,8 @@ CMD_AUTH            = 1102  # Connections authorizations
 CMD_PREPARE_DATA    = 1500  # Prepares to transmit the data
 CMD_DATA            = 1501  # Transmit a data packet
 CMD_FREE_DATA       = 1502  # Clear machines opened buffer
+_CMD_PREPARE_BUFFER = 1503  # (UNDOCUMENTED) initialize buffer for partial reads!
+_CMD_READ_BUFFER    = 1504  # (UNDOCUMENTED) ready a partial chunk of data from buffer
 
 CMD_ACK_OK          = 2000  # Return value for order perform successfully
 CMD_ACK_ERROR       = 2001  # Return value for order perform failed

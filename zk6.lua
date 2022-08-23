@@ -175,7 +175,9 @@ local rcomands = {
     [75] = "CMD_DOORSTATE_RRQ",
     [76] = "CMD_WRITE_MIFARE",
     [78] = "CMD_EMPTY_MIFARE",
-    [88] = "_CMD_GET_USER_TEMPLATE",
+    [88] = "_CMD_GET_USERTEMP",
+    [110] = "_CMD_SAVE_USERTEMPS",
+    [134] = "_CMD_DEL_USER_TEMP",
     [201] = "CMD_GET_TIME",
     [202] = "CMD_SET_TIME",
     [500] = "CMD_REG_EVENT",
@@ -199,8 +201,8 @@ local rcomands = {
     [1500] = "CMD_PREPARE_DATA",
     [1501] = "CMD_DATA",
     [1502] = "CMD_FREE_DATA",
-    [1503] = "CMD_PREPARE_BUFFER",
-    [1504] = "CMD_READ_BUFFER",
+    [1503] = "_CMD_PREPARE_BUFFER",
+    [1504] = "_CMD_READ_BUFFER",
     [2000] = "CMD_ACK_OK",
     [2001] = "CMD_ACK_ERROR",
     [2002] = "CMD_ACK_DATA",
@@ -226,8 +228,9 @@ local pf_checksum  = ProtoField.new   ("CheckSum", "zk6.checksum", ftypes.UINT16
 local pf_sesion_id = ProtoField.uint16("zk6.session_id", "ID session", base.HEX)
 local pf_reply_id  = ProtoField.uint16("zk6.reply_id", "ID Reply")
 local pf_commkey   = ProtoField.new   ("Communication key", "zk6.commkey", ftypes.UINT32, nil, base.HEX)
-local pf_data      = ProtoField.new   ("Data", "zk6.data", ftypes.BYTES, nil, base.DOT)
-local pf_string    = ProtoField.new   ("Data", "zk6.string", ftypes.STRING)
+local pf_data      = ProtoField.new   ("Data(hex)", "zk6.data", ftypes.BYTES, nil, base.DOT)
+local pf_data_len  = ProtoField.new   ("Data(length)", "zk6.data", ftypes.UINT32, nil)
+local pf_string    = ProtoField.new   ("Data(string)", "zk6.string", ftypes.STRING)
 local pf_time      = ProtoField.new   ("Time", "zk6.time", ftypes.UINT32, nil)
 local pf_start     = ProtoField.new   ("Data offset", "zk6.start", ftypes.UINT32, nil)
 local pf_size      = ProtoField.new   ("Data Size", "zk6.size", ftypes.UINT32, nil)
@@ -261,18 +264,33 @@ local pf_pbarg     = ProtoField.new   ("argument", "zk6.pbarg", ftypes.UINT64, r
 local pf_pbfill0   = ProtoField.new   ("null 0", "zk6.pbfill0", ftypes.UINT8, nil)
 local pf_pbfree    = ProtoField.new   ("free space", "zk6.pbfree", ftypes.UINT32, nil)
 local pf_uid       = ProtoField.new   ("User ID", "zk6.uid", ftypes.UINT16, nil)
+local pf_priv      = ProtoField.new   ("User Privilege", "zk6.priv", ftypes.UINT8, nil)
+local pf_pass      = ProtoField.new   ("User Password", "zk6.pass", ftypes.BYTES, nil, base.DOT)
+local pf_name      = ProtoField.new   ("User Name", "zk6.name", ftypes.STRING)
+local pf_card      = ProtoField.new   ("User Card", "zk6.card", ftypes.UINT32, nil)
+local pf_group     = ProtoField.new   ("User Group", "zk6.group", ftypes.BYTES, nil, base.DOT)
+local pf_userid    = ProtoField.new   ("User UserID", "zk6.userid", ftypes.STRING)
+local pf_pbfill2   = ProtoField.new   ("STX(0x02)", "zk6.pbfill2", ftypes.UINT8, nil)
+local pf_upack     = ProtoField.new   ("HR.User Table size", "zk6.upack", ftypes.UINT32, nil)
+local pf_tpack     = ProtoField.new   ("HR.User_finger rel.size", "zk6.tpack", ftypes.UINT32, nil)
+local pf_fpack     = ProtoField.new   ("HR.Finger Table size", "zk6.fpack", ftypes.UINT32, nil)
+local pf_fid16     = ProtoField.new   ("UFP FingerID+16", "zk6.fid16", ftypes.UINT8, nil)
+local pf_findex    = ProtoField.new   ("Index from Finger Table ", "zk6.findex", ftypes.UINT8, nil)
+local pf_fsize     = ProtoField.new   ("Finger size", "zk6.fsize", ftypes.UINT16, nil)
 ----------------------------------------
 -- this actually registers the ProtoFields above, into our new Protocol
 -- in a real script I wouldn't do it this way; I'd build a table of fields programmatically
 -- and then set dns.fields to it, so as to avoid forgetting a field
-zk.fields = { pf_command, pf_checksum, pf_sesion_id, pf_reply_id, pf_commkey, pf_data, pf_string,
+zk.fields = { pf_command, pf_checksum, pf_sesion_id, pf_reply_id, pf_commkey, pf_data, pf_data_len, pf_string,
               pf_time, pf_start, pf_size, pf_psize, pf_fsize0, pf_fsize1, pf_fsize2, pf_fsize3,
               pf_fsizeu, pf_fsize4, pf_fsizef, pf_fsize5,pf_fsizer,pf_fsize6,pf_fsize7,
               pf_fsize8,pf_fsizec,pf_fsize9,pf_fsizefc,pf_fsizeuc,pf_fsizerc, pf_uid,
               pf_fsizefa,pf_fsizeua,pf_fsizera, pf_fsizeff, pf_fsize10, pf_fsizeffc, 
-              pf_pbfill, pf_pbcmd, pf_pbarg, pf_pbfill0, pf_pbfree}
+              pf_pbfill, pf_pbcmd, pf_pbarg, pf_pbfill0, pf_pbfree,pf_priv,pf_pass,pf_name,pf_card,pf_group,pf_userid,
+              pf_upack, pf_tpack, pf_fpack, pf_pbfill2, pf_fid16, pf_findex, pf_fsize}
 
 zk_tcp.fields = { pf_machine1, pf_machine2, pf_length }
+
 ----------------------------------------
 -- we don't just want to display our protocol's fields, we want to access the value of some of them too!
 -- There are several ways to do that.  One is to just parse the buffer contents in Lua code to find
@@ -405,6 +423,19 @@ local getQueryName
 
 local prevCommand = 0
 
+function dissect_user72(tree, tvbuf)
+    tree:add_le(pf_uid, tvbuf:range(0, 2))
+    tree:add(pf_priv, tvbuf:range(2, 1))
+    tree:add(pf_pass, tvbuf:range(3, 8))
+    tree:add(pf_name, tvbuf:range(11, 24))
+    tree:add_le(pf_card, tvbuf:range(35, 4))
+    tree:add(pf_pbfill, tvbuf:range(39, 1))
+    tree:add(pf_group, tvbuf:range(40, 7))
+    tree:add(pf_pbfill0, tvbuf:range(47, 1))
+    tree:add(pf_userid, tvbuf:range(48, 24))
+    return 72
+end
+
 ----------------------------------------
 -- The following creates the callback function for the dissector.
 -- It's the same as doing "dns.dissector = function (tvbuf,pkt,root)"
@@ -458,6 +489,8 @@ function zk.dissector(tvbuf, pktinfo, root)
         remain = pktlen - ZK_HDR_LEN -- TODO: no funciona el prevCommand,
         if (command == 1102) then --CMD_AUTH
             tree:add_le(pf_commkey, tvbuf:range(8,4))
+        elseif (command == 8) then --CMD_USER_WRQ
+            dissect_user72(tree, tvbuf:range(8, 72))
         elseif (command == 1500) then --CMD_PREPARE_DATA
             tree:add_le(pf_size, tvbuf:range(8,4))
             pktinfo.cols.info = tostring(pktinfo.cols.info) .. " - " .. tvbuf:range(8,4):le_uint() .. " Bytes"
@@ -486,6 +519,48 @@ function zk.dissector(tvbuf, pktinfo, root)
         elseif (command == 1501) then --CMD_DATA
             pktinfo.cols.info = tostring(pktinfo.cols.info) .. " " .. (remain) .. " Bytes"
             tree:add(pf_string, tvbuf:range(8,remain))
+            if (prevCommand == 110) then -- save_usertemps
+                tree:add_le(pf_upack, tvbuf:range(8,4))
+                tree:add_le(pf_tpack, tvbuf:range(12,4))
+                tree:add_le(pf_fpack, tvbuf:range(16,4))
+                local upack = tvbuf:range(8,4):le_uint()
+                local tpack = tvbuf:range(12,4):le_uint()
+                local fpack = tvbuf:range(16,4):le_uint()
+                --tree:add_le(pf_data, tvbuf:range(20, upack))
+                local ptr = 20
+                while (ptr < upack)
+                do
+                    uid = tvbuf:range(ptr+1,2):le_uint()
+                    utree = tree:add(tvbuf:range(ptr, 73), "USER uid#" .. tostring(uid))
+                    utree:add_le(pf_pbfill2, tvbuf:range(ptr, 1))
+                    ptr = ptr + 1
+                    ptr = ptr + dissect_user72(utree, tvbuf:range(ptr, 72))
+                end
+                --tree:add_le(pf_data, tvbuf:range(20 + upack, tpack))
+                local uf_table = {}
+                for ptr = 20 + upack, 20 + upack + tpack -1, 8
+                do
+                    uf = {}
+                    uf.uid = tvbuf:range(ptr+1,2):le_uint()
+                    uf.fid = tvbuf:range(ptr+3,1):le_uint() - 16
+                    uf.fptr = tvbuf:range(ptr+4,4):le_uint()
+                    uf_table[#uf_table+1] = uf
+                    uftree = tree:add(tvbuf:range(ptr, 8), "UF uid#" .. tostring(uf.uid) .. " fid#" .. tostring(uf.fid))
+                    uftree:add_le(pf_pbfill2, tvbuf:range(ptr, 1))
+                    uftree:add_le(pf_uid, tvbuf:range(ptr + 1, 2))
+                    uftree:add_le(pf_fid16, tvbuf:range(ptr + 3, 1))
+                    uftree:add_le(pf_findex, tvbuf:range(ptr + 4, 4))
+                end
+                ftree = tree:add_le(tvbuf:range(20 + upack + tpack, fpack), "Finger table")
+                ptr = 20 + upack + tpack
+                next = 0
+                for i,uf in ipairs(uf_table)
+                do
+                    ftree:add_le(pf_fsize, tvbuf:range(ptr + uf.fptr,2))
+                    local fsize = tvbuf:range(ptr + uf.fptr,2):le_uint()
+                    uftree = ftree:add(tvbuf:range(ptr+ uf.fptr + 2, fsize), "uid  #" .. tostring(uf.uid) .. " fid #" .. tostring(uf.fid))
+                end
+            end
         elseif (prevCommand == 1503) then -- CMD_PREPARE_BUFFER OK!
             tree:add_le(pf_pbfill0, tvbuf:range(8,1))
             tree:add_le(pf_size, tvbuf:range(9,4))
@@ -525,8 +600,9 @@ function zk.dissector(tvbuf, pktinfo, root)
             tree:add_le(pf_fsizeffc, tvbuf:range(96,4))
             end
         else
-            -- tree:add_le(pf_data, tvbuf:range(8,remain)) most time we need strings
-            tree:add(pf_string, tvbuf:range(8,remain))
+            datatree = tree:add(pf_data_len, remain )
+            datatree:add(pf_string, tvbuf:range(8,remain))
+            datatree:add_le(pf_data, tvbuf:range(8,remain)) --most time we need strings
         end
     end
     dprint2("zk.dissector returning",pktlen)

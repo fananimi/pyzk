@@ -15,10 +15,10 @@ class Finger(object):
         self.mark = codecs.encode(template[:8], 'hex') + b'...' + codecs.encode(template[-8:], 'hex')
 
     def repack(self): #full
-        return pack("HHbb%is" % (self.size), self.size+6, self.uid, self.fid, self.valid, self.template)
+        return pack("<HHbb%is" % (self.size), self.size+6, self.uid, self.fid, self.valid, self.template)
 
     def repack_only(self): #only template
-        return pack("H%is" % (self.size), self.size, self.template)
+        return pack("<H%is" % (self.size), self.size, self.template)
 
     @staticmethod
     def json_unpack(json):

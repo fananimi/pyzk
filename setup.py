@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name='pyzk',
-    version='0.9',
+    version='0.9.1',
     description='an unofficial library of zksoftware fingerprint device',
     url='https://github.com/fananimi/pyzk',
     author='Fanani M. Ihsan',

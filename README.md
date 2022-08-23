@@ -165,6 +165,22 @@ fingers = conn.get_templates()
 conn.save_user_template(user, [fing1 ,fing2])
 ```
 
+* High rate transfer
+
+you can use the high rate mode to fasten the uploading of users and finger templates, you just need actual instances of users and fingers in a corresponding list/array.
+
+```python
+usertemplates = [
+    [user_1, [user_finger_1, user_finger_2]],
+    [user_2, [finger_3]],
+    ...
+]
+conn.HR_save_usertemplates(usertemplates)
+```
+
+
+
+
 * Remote Fingerprint Enrollment
 ```python
 zk.enroll_user('1')
