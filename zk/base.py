@@ -968,11 +968,11 @@ class ZK(object):
             else:
                 upack += user.repack73()
             for finger in fingers:
-                if not isinstance(fingers, Finger):
+                if not isinstance(finger, Finger):
                     raise ZKErrorResponse("Invalid finger template in usertemplates list")
                 tfp = finger.repack_only()
                 table += pack("<bHbI", 2, user.uid, fnum + finger.fid, tstart)
-                start += len(tfp)
+                tstart += len(tfp)
                 fpack += tfp
         head = pack("III", len(upack), len(table), len(fpack))
         packet = head + upack + table + fpack
