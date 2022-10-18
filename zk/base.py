@@ -356,7 +356,7 @@ class ZK(object):
         )
         return d
 
-    def connect(self):
+    def connect(self, connect_data=b''):
         """
         connect to the device
 
@@ -370,7 +370,7 @@ class ZK(object):
         self.__create_socket()
         self.__session_id = 0
         self.__reply_id = const.USHRT_MAX - 1
-        cmd_response = self.__send_command(const.CMD_CONNECT)
+        cmd_response = self.__send_command(const.CMD_CONNECT, connect_data)
         self.__session_id = self.__header[2]
         if cmd_response.get('code') == const.CMD_ACK_UNAUTH:
             if self.verbose: print ("try auth")
