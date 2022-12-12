@@ -1341,6 +1341,9 @@ class ZK(object):
                     elif len(data) == 36:
                         user_id,  status, punch, timehex, _other = unpack('<24sBB6s4s', data[:36])
                         data = data[36:]
+                    elif len(data) == 37:
+                        user_id,  status, punch, timehex, _other = unpack('<24sBB6s5s', data[:37])
+                        data = data[37:]
                     elif len(data) >= 52:
                         user_id,  status, punch, timehex, _other = unpack('<24sBB6s20s', data[:52])
                         data = data[52:]
