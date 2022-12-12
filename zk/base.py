@@ -947,27 +947,41 @@ class ZK(object):
                     raise ZKErrorResponse("Can't find user")
         if isinstance(fingers, Finger):
             fingers = [fingers]
+        self.HR_save_usertemplates ([user, fingers])
+
+    def HR_save_usertemplates(self, usertemplates):
+        """
+        save users and templates in high rate mode
+
+        :param [user,[fingers]]
+        """
+        upack = b""
         fpack = b""
         table = b""
         fnum = 0x10
         tstart = 0
-        for finger in fingers:
-            tfp = finger.repack_only()
-            table += pack("<bHbI", 2, user.uid, fnum + finger.fid, tstart)
-            tstart += len(tfp)
-            fpack += tfp
-        if self.user_packet_size == 28:
-            upack = user.repack29()
-        else:
-            upack = user.repack73()
+        for user, fingers in usertemplates:
+            if not isinstance(user, User):
+                raise ZKErrorResponse("Invalid user in usertemplates list")
+            if self.user_packet_size == 28:
+                upack += user.repack29()
+            else:
+                upack += user.repack73()
+            for finger in fingers:
+                if not isinstance(finger, Finger):
+                    raise ZKErrorResponse("Invalid finger template in usertemplates list")
+                tfp = finger.repack_only()
+                table += pack("<bHbI", 2, user.uid, fnum + finger.fid, tstart)
+                tstart += len(tfp)
+                fpack += tfp
         head = pack("III", len(upack), len(table), len(fpack))
         packet = head + upack + table + fpack
         self._send_with_buffer(packet)
-        command = 110
+        command = const._CMD_SAVE_USERTEMPS
         command_string = pack('<IHH', 12,0,8)
         cmd_response = self.__send_command(command, command_string)
         if not cmd_response.get('status'):
-            raise ZKErrorResponse("Can't save utemp")
+            raise ZKErrorResponse("Can't save usertemplates")
         self.refresh_data()
 
     def _send_with_buffer(self, buffer):
@@ -1005,7 +1019,7 @@ class ZK(object):
         :return: bool
         """
         if self.tcp and user_id:
-            command = 134
+            command = const._CMD_DEL_USER_TEMP
             command_string = pack('<24sB', str(user_id), temp_id)
             cmd_response = self.__send_command(command, command_string)
             if cmd_response.get('status'):
@@ -1062,7 +1076,7 @@ class ZK(object):
                 return False
             uid = users[0].uid
         for _retries in range(3):
-            command = 88 # command secret!!! GET_USER_TEMPLATE
+            command = const._CMD_GET_USERTEMP # command secret!!! GET_USER_TEMPLATE
             command_string = pack('hb', uid, temp_id)
             response_size = 1024 + 8
             cmd_response = self.__send_command(command, command_string, response_size)
@@ -1518,7 +1532,7 @@ class ZK(object):
         read a chunk from buffer
         """
         for _retries in range(3):
-            command = 1504
+            command = const._CMD_READ_BUFFER
             command_string = pack('<ii', start, size)
             if self.tcp:
                 response_size = size + 32
@@ -1544,7 +1558,7 @@ class ZK(object):
         response_size = 1024
         data = []
         start = 0
-        cmd_response = self.__send_command(1503, command_string, response_size)
+        cmd_response = self.__send_command(const._CMD_PREPARE_BUFFER, command_string, response_size)
         if not cmd_response.get('status'):
             raise ZKErrorResponse("RWB Not supported")
         if cmd_response['code'] == const.CMD_DATA:

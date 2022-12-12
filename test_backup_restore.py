@@ -42,6 +42,8 @@ parser.add_argument('-r', '--restore', action="store_true",
                     help='Restore from backup')
 parser.add_argument('-c', '--clear-attendance', action="store_true",
                     help='On Restore, also clears the attendance [default keep attendance]')
+parser.add_argument('-g', '--high-rate', action="store_true",
+                    help='in restoration, use high-rate mode')
 parser.add_argument('filename', nargs='?',
                     help='backup filename (default [serialnumber].bak)', default='')
 
@@ -124,11 +126,17 @@ try:
         print ("INFO: ready to write {} templates".format(len(templates)))
         erase_device(conn, serialnumber, args.clear_attendance)
         print ('Restoring Data...')
+        usertemplates = []
         for u in users:
             #look for Templates
             temps = list(filter(lambda f: f.uid ==u.uid, templates))
             #print ("user {} has {} fingers".format(u.uid, len(temps)))
-            conn.save_user_template(u,temps)
+            if not args.high_rate:
+                conn.save_user_template(u,temps)
+            else:
+                usertemplates.append([u,temps])
+        if args.high_rate:
+            conn.HR_save_usertemplates(usertemplates)
         conn.enable_device()
         print ('--- final sizes & capacity ---')
         conn.read_sizes()
