@@ -5,6 +5,7 @@ import sys
 import os
 import unittest
 import codecs
+import json
 
 if sys.version_info[0] < 3:
     from mock import patch, Mock, MagicMock
@@ -509,6 +510,41 @@ class PYZKTest(unittest.TestCase):
             conn.end_live_capture = True
             self.assertEqual(att.user_id, "1140064", "incorrect user_id %s" % att.user_id)
         conn.disconnect()
+
+    def test_finger_pack(self):
+        fing = Finger(26,1,1,codecs.decode("0123456789ABCDEF", "hex"))
+        expected = {
+            "size": 8,
+            "uid": 26,
+            "fid": 1,
+            "valid": 1,
+            "template": "0123456789abcdef"
+        }
+        sut = fing.json_pack()
+        self.assertEqual(sut, expected)
+
+    def test_finger_unpack(self):
+        packed = {
+            "size": 8,
+            "uid": 26,
+            "fid": 1,
+            "valid": 1,
+            "template": "0123456789abcdef"
+        }
+        sut = Finger.json_unpack(packed)
+        self.assertEqual(sut.uid, packed['uid'])
+
+    def test_finger_unpack_str(self):
+        data = {
+            "size": 8,
+            "uid": 26,
+            "fid": 1,
+            "valid": 1,
+            "template": "0123456789abcdef"
+        }
+        packed_str = json.dumps(data)
+        sut = Finger.json_unpack(json.loads(packed_str))
+        self.assertEqual(sut.uid, data['uid'])
 
 if __name__ == '__main__':
     unittest.main()
