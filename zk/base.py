@@ -947,7 +947,7 @@ class ZK(object):
                     raise ZKErrorResponse("Can't find user")
         if isinstance(fingers, Finger):
             fingers = [fingers]
-        self.HR_save_usertemplates ([user, fingers])
+        self.HR_save_usertemplates ([(user, fingers)])
 
     def HR_save_usertemplates(self, usertemplates):
         """
