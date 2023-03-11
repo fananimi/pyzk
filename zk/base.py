@@ -1646,6 +1646,7 @@ class ZK(object):
                 attendance = Attendance(user_id, timestamp, status, punch, uid)
                 attendances.append(attendance)
         else:
+            record_size_int = int(record_size)
             while len(attendance_data) >= 40:
                 uid, user_id, status, timestamp, punch, space = unpack('<H24sB4sB8s', attendance_data.ljust(40, b'\x00')[:40])
                 if self.verbose: print (codecs.encode(attendance_data[:40], 'hex'))
@@ -1654,7 +1655,7 @@ class ZK(object):
 
                 attendance = Attendance(user_id, timestamp, status, punch, uid)
                 attendances.append(attendance)
-                attendance_data = attendance_data[40:]
+                attendance_data = attendance_data[record_size_int:]
         return attendances
 
     def clear_attendance(self):
