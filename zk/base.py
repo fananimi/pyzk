@@ -1608,7 +1608,7 @@ class ZK(object):
             if self.verbose: print ("WRN: no attendance data")
             return []
         total_size = unpack("I", attendance_data[:4])[0]
-        record_size = total_size/self.records
+        record_size = total_size // self.records
         if self.verbose: print ("record_size is ", record_size)
         attendance_data = attendance_data[4:]
         if record_size == 8:
@@ -1654,7 +1654,7 @@ class ZK(object):
 
                 attendance = Attendance(user_id, timestamp, status, punch, uid)
                 attendances.append(attendance)
-                attendance_data = attendance_data[40:]
+                attendance_data = attendance_data[record_size:]
         return attendances
 
     def clear_attendance(self):
