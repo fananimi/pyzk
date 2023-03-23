@@ -1345,10 +1345,16 @@ class ZK(object):
                 if not len(data):
                     if self.verbose: print ("empty")
                     continue
-                while len(data) >= 12:
-                    if len(data) == 12:
+                while len(data) >= 10:
+                    if len(data) == 10:
+                        user_id, status, punch, timehex = unpack('<HBB6s', data)
+                        data = data[10:]
+                    elif len(data) == 12:
                         user_id, status, punch, timehex = unpack('<IBB6s', data)
                         data = data[12:]
+                    elif len(data) == 14:
+                        user_id, status, punch, timehex, _other = unpack('<HBB6s4s', data)
+                        data = data[14:]
                     elif len(data) == 32:
                         user_id,  status, punch, timehex = unpack('<24sBB6s', data[:32])
                         data = data[32:]
