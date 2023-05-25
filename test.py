@@ -222,6 +222,9 @@ class PYZKTest(unittest.TestCase):
         self.assertEqual(usu.uid, 4, "incorrect uid %s" % usu.uid)
         self.assertEqual(usu.user_id, "831", "incorrect user_id %s" % usu.user_id)
         self.assertEqual(usu.name, "NN-831", "incorrect uid %s" % usu.name) # generated
+        self.assertEqual(usu.privilege, 0, "incorrect privilege")
+        self.assertEqual(usu.is_enabled(), True, "incorrect flag")
+        self.assertEqual(usu.usertype(), const.USER_DEFAULT, "incorrect userType")
         conn.disconnect()
 
     @patch('zk.base.socket')

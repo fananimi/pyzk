@@ -33,6 +33,15 @@ class User(object):
         # 0,0 => 7sx group id, timezone?
         return pack("<BHB8s24sIB7sx24s", 2, self.uid, self.privilege,self.password.encode(User.encoding, errors='ignore'), self.name.encode(User.encoding, errors='ignore'), self.card, 1, str(self.group_id).encode(User.encoding, errors='ignore'), str(self.user_id).encode(User.encoding, errors='ignore'))
 
+    def is_disabled(self):
+        return bool(self.privilege & 1)
+
+    def is_enabled(self):
+        return not self.is_disabled()
+
+    def usertype(self):
+        return (self.privilege  & 0xE)
+
     def __str__(self):
         return u'<User>: [uid:{}, name:{} user_id:{}]'.format(self.uid, self.name, self.user_id)
 

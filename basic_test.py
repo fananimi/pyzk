@@ -16,8 +16,14 @@ try:
     users = conn.get_users()
     for user in users:
         privilege = 'User'
-        if user.privilege == const.USER_ADMIN:
+        if user.usertype() == const.USER_ADMIN:
             privilege = 'Admin'
+        elif user.usertype() == const.USER_MANAGER:
+            privilege = 'Manager'
+        elif user.usertype() == const.USER_ENROLLER:
+            privilege = 'Enroller'
+        if user.is_disabled():
+            privilege += '(DISABLED)'
         print ('- UID #{}'.format(user.uid))
         print ('  Name       : {}'.format(user.name))
         print ('  Privilege  : {}'.format(privilege))
