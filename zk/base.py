@@ -228,6 +228,7 @@ class ZK(object):
         return size!
         """
         if len(packet)<=8:
+            if self.verbose: print('incomplete response? ' + codecs.encode(packet,'hex'))
             return 0
         tcp_header = unpack('<HHI', packet[:8])
         if tcp_header[0] == const.MACHINE_PREPARE_DATA_1 and tcp_header[1] == const.MACHINE_PREPARE_DATA_2:
@@ -249,7 +250,12 @@ class ZK(object):
                 self.__tcp_data_recv = self.__sock.recv(response_size + 8)
                 self.__tcp_length = self.__test_tcp_top(self.__tcp_data_recv)
                 if self.__tcp_length == 0:
-                    raise ZKNetworkError("TCP packet invalid")
+                    #retries once! TODO: determine if only in connection packet
+                    if self.verbose: print('retry recv!')
+                    self.__tcp_data_recv = self.__sock.recv(response_size + 8)
+                    self.__tcp_length = self.__test_tcp_top(self.__tcp_data_recv)
+                    if self.__tcp_length == 0:
+                        raise ZKNetworkError("TCP packet invalid")
                 self.__header = unpack('<4H', self.__tcp_data_recv[8:16])
                 self.__data_recv = self.__tcp_data_recv[8:]
             else:
@@ -356,7 +362,7 @@ class ZK(object):
         )
         return d
 
-    def connect(self):
+    def connect(self, connect_data=b''):
         """
         connect to the device
 
@@ -370,7 +376,7 @@ class ZK(object):
         self.__create_socket()
         self.__session_id = 0
         self.__reply_id = const.USHRT_MAX - 1
-        cmd_response = self.__send_command(const.CMD_CONNECT)
+        cmd_response = self.__send_command(const.CMD_CONNECT, connect_data)
         self.__session_id = self.__header[2]
         if cmd_response.get('code') == const.CMD_ACK_UNAUTH:
             if self.verbose: print ("try auth")
