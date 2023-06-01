@@ -1597,10 +1597,11 @@ class ZK(object):
         if self.verbose: print ("_read w/chunk %i bytes" % start)
         return b''.join(data), start
 
-    def get_attendance(self):
+    def get_attendance(self, last_records=0):
         """
         return attendance record
-
+        
+        :param last_records: Indicates the number of registers to obtain, located in the last memory spaces. If is value is zero, filtering is not applied.
         :return: List of Attendance object
         """
         self.read_sizes()
@@ -1616,8 +1617,17 @@ class ZK(object):
         total_size = unpack("I", attendance_data[:4])[0]
         record_size = total_size // self.records
         if self.verbose: print ("record_size is ", record_size)
+        
+        start_pos = 0
+        if(last_records > 0 and last_records < self.records):
+            skip_records = self.records - last_records
+            start_pos += skip_records
+
         attendance_data = attendance_data[4:]
+        
         if record_size == 8:
+            if(start_pos > 0):
+                attendance_data = attendance_data[(8 * start_pos):]
             while len(attendance_data) >= 8:
                 uid, status, timestamp, punch = unpack('HB4sB', attendance_data.ljust(8, b'\x00')[:8])
                 if self.verbose: print (codecs.encode(attendance_data[:8], 'hex'))
@@ -1631,6 +1641,8 @@ class ZK(object):
                 attendance = Attendance(user_id, timestamp, status, punch, uid)
                 attendances.append(attendance)
         elif record_size == 16:
+            if(start_pos > 0):
+                attendance_data = attendance_data[(16 * start_pos):]
             while len(attendance_data) >= 16:
                 user_id, timestamp, status, punch, reserved, workcode = unpack('<I4sBB2sI', attendance_data.ljust(16, b'\x00')[:16])
                 user_id = str(user_id)
@@ -1652,6 +1664,8 @@ class ZK(object):
                 attendance = Attendance(user_id, timestamp, status, punch, uid)
                 attendances.append(attendance)
         else:
+            if(start_pos > 0):
+                attendance_data = attendance_data[(40 * start_pos):]
             while len(attendance_data) >= 40:
                 uid, user_id, status, timestamp, punch, space = unpack('<H24sB4sB8s', attendance_data.ljust(40, b'\x00')[:40])
                 if self.verbose: print (codecs.encode(attendance_data[:40], 'hex'))
