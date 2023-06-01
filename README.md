@@ -431,6 +431,10 @@ DeviceName       : F18/ID
 Firmware Version : Ver 6.60 May 25 2018
 Platform         : JZ4725_TFT
 DeviceName       : K40/ID
+
+Firmware Version : Ver 6.60 May 14 2018
+Platform         : ZMM200_TFT
+DeviceName       : iClock700/ID
 ```
 
 
