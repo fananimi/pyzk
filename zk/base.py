@@ -400,6 +400,27 @@ class ZK(object):
         else:
             raise ZKErrorResponse("can't disconnect")
 
+    def get_user_verif_mode(self, uid: int):
+        cmd_response = self.__send_command(const.CMD_VERIFY_RRQ, pack('<H', uid), 40)
+        if not cmd_response.get('status'):
+            raise ZKErrorResponse("can't get verif mode")
+        mode = self.__data[2]
+        if not mode & 128:
+            return None # means Group
+        return const.VERIF_MODES[mode & 127]
+
+    def set_user_verif_mode(self, uid: int, mode: str):
+        if not mode:
+            code = 0
+        elif not mode in const.VERIF_MODES:
+            raise ZKErrorResponse("unknown mode")
+        else:
+            code = const.VERIF_MODES.index(mode) | 128        
+        cmd_response = self.__send_command(const.CMD_VERIFY_WRQ, pack('<HB21s', uid, code, b'\x00' * 21))
+        if not cmd_response.get('status'):
+            raise ZKErrorResponse("can't set verif mode")
+
+
     def enable_device(self):
         """
         re-enable the connected device and allow user activity in device again
@@ -900,9 +921,10 @@ class ZK(object):
         if not user_id:
             user_id = str(uid) #ZK6 needs uid2 == uid
         #TODO: check what happens if name is missing...
-        if privilege not in [const.USER_DEFAULT, const.USER_ADMIN]:
-            privilege = const.USER_DEFAULT
         privilege = int(privilege)
+        privilege = privilege & 15
+        privilege |= privilege >> 1 & -2
+        privilege |= privilege >> 1 & -2
         if self.user_packet_size == 28: #self.firmware == 6:
             if not group_id:
                 group_id = 0
