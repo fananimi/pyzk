@@ -408,8 +408,9 @@ Firmware Version : Ver 6.60 Jan 13 2016
 Platform         : ZMM220_TFT
 DeviceName       : iFace702 (without voice function, test with encoding='gbk')
 ```
-
-
+Firmware Version : Ver 6.70 Apr 15 2014
+Platform         : ZEM600_TFT
+DeviceName       : 
 
 ### Latest tested (not really confirmed)
 
