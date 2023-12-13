@@ -432,8 +432,9 @@ Firmware Version : Ver 6.60 May 25 2018
 Platform         : JZ4725_TFT
 DeviceName       : K40/ID
 ```
-
-
+Firmware Version : Ver 6.70 Apr 15 2014
+Platform         : ZEM600_TFT
+DeviceName       : 
 
 ### Latest tested (not really confirmed)
 
