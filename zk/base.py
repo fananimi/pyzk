@@ -915,7 +915,7 @@ class ZK(object):
         else:
             name_pad = name.encode(self.encoding, errors='ignore').ljust(24, b'\x00')[:24]
             card_str = pack('<I', int(card))[:4]
-            command_string = pack('HB8s24s4sx7sx24s', uid, privilege, password.encode(self.encoding, errors='ignore'), name_pad, card_str, group_id.encode(), user_id.encode())
+            command_string = pack('HB8s24s4sB7sx24s', uid, privilege, password.encode(self.encoding, errors='ignore'), name_pad, card_str, group_id.encode(), user_id.encode())
         response_size = 1024 #TODO check response?
         cmd_response = self.__send_command(command, command_string, response_size)
         if self.verbose: print("Response: %s" % cmd_response)
@@ -1154,10 +1154,10 @@ class ZK(object):
                 userdata = userdata[28:]
         else:
             while len(userdata) >= 72:
-                uid, privilege, password, name, card, group_id, user_id = unpack('<HB8s24sIx7sx24s', userdata.ljust(72, b'\x00')[:72])
+                uid, privilege, password, name, card, group_id, _, user_id = unpack('<HB8s24sIBx6sx24s', userdata.ljust(72, b'\x00')[:72])
                 password = (password.split(b'\x00')[0]).decode(self.encoding, errors='ignore')
                 name = (name.split(b'\x00')[0]).decode(self.encoding, errors='ignore').strip()
-                group_id = (group_id.split(b'\x00')[0]).decode(self.encoding, errors='ignore').strip()
+                #group_id = (group_id.split(b'\x00')[0]).decode(self.encoding, errors='ignore').strip()
                 user_id = (user_id.split(b'\x00')[0]).decode(self.encoding, errors='ignore')
                 if uid > max_uid: max_uid = uid
                 if not name:
