@@ -1651,6 +1651,39 @@ class ZK(object):
                 timestamp = self.__decode_time(timestamp)
                 attendance = Attendance(user_id, timestamp, status, punch, uid)
                 attendances.append(attendance)
+
+        # ZKTeco SpeedFace-V5L Multi-Biometrical Reader
+        elif record_size == 49:
+            while len(attendance_data) >= 49:
+                try:
+                    # Debug: print raw data before unpacking
+                    # print(f"Raw data (hex): {codecs.encode(attendance_data[:49], 'hex')}")
+                    
+                    # Adjust format to unpack 49 bytes
+                    uid, user_id, status, timestamp, punch, additional_data = unpack('<H24sB4sB12s5x', attendance_data[:49])
+                    
+                    # Print unpacked values
+                    # print(f"Unpacked data: uid={uid}, user_id={user_id}, status={status}, timestamp={timestamp}, punch={punch}, additional_data={additional_data}")
+                    
+                    
+                    # Further processing...
+                    user_id = (user_id.split(b'\x00')[0]).decode(errors='ignore')
+                    timestamp = self.__decode_time(timestamp)
+                    # print(f"Decoded timestamp: {timestamp}")
+                    # print(f"Additional Data (hex): {codecs.encode(additional_data, 'hex')}")
+                    # print(f"Additional Data (decoded): {additional_data.decode(errors='ignore')}")
+
+
+                    # Create attendance record
+                    attendance = Attendance(user_id, timestamp, status, punch, uid)
+                    attendances.append(attendance)
+                    
+                    # Move to the next part of the data
+                    attendance_data = attendance_data[49:]
+                    
+                except Exception as e:
+                    print(f"Unpacking error: {e}")
+
         else:
             while len(attendance_data) >= 40:
                 uid, user_id, status, timestamp, punch, space = unpack('<H24sB4sB8s', attendance_data.ljust(40, b'\x00')[:40])
