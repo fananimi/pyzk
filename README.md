@@ -431,6 +431,10 @@ DeviceName       : F18/ID
 Firmware Version : Ver 6.60 May 25 2018
 Platform         : JZ4725_TFT
 DeviceName       : K40/ID
+
+Firmware Version : Ver 6.60 Jul 2 2020
+Platform         : ZSM760_TFT
+DecivceName      : G4 
 ```
 
 
