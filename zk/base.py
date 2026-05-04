@@ -331,8 +331,16 @@ class ZK(object):
 
         year = t + 2000
 
-        d = datetime(year, month, day, hour, minute, second)
-
+        try:
+            d = datetime(year, month, day, hour, minute, second)
+        except ValueError:
+            # Clamp values to valid ranges if out of range
+            month = max(1, min(month, 12))
+            day = max(1, min(day, 28))  # Use 28 to be safe for all months
+            hour = max(0, min(hour, 23))
+            minute = max(0, min(minute, 59))
+            second = max(0, min(second, 59))
+            d = datetime(year, month, day, hour, minute, second)
         return d
 
     def __decode_timehex(self, timehex):
