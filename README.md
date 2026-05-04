@@ -12,6 +12,19 @@ There is some installation method you can use below:
 ```sh
 pip install -U pyzk
 ```
+### Debian/Ubuntu (PEP 668)
+
+On modern Debian-based systems the above command may fail with:
+
+    error: externally-managed-environment
+
+This is enforced by PEP 668 to protect system Python packages.
+Use a virtual environment instead:
+
+    sudo apt install python3-venv -y
+    python3 -m venv venv
+    source venv/bin/activate
+    pip install pyzk
 
 * manual installation (clone and execute)
 
