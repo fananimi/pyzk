@@ -187,7 +187,7 @@ class ZK(object):
         """
         Puts a the parts that make up a packet together and packs them into a byte string
         """
-        buf = pack('<4H', command, 0, session_id, reply_id) + command_string
+        buf = pack('<4H', command, 0, session_id, reply_id) + command_string.encode('utf-8')
         buf = unpack('8B' + '%sB' % len(command_string), buf)
         checksum = unpack('H', self.__create_checksum(buf))[0]
         reply_id += 1
@@ -195,7 +195,7 @@ class ZK(object):
             reply_id -= const.USHRT_MAX
 
         buf = pack('<4H', command, checksum, session_id, reply_id)
-        return buf + command_string
+        return buf + command_string.encode('utf-8')
 
     def __create_checksum(self, p):
         """
