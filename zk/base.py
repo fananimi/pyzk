@@ -1055,7 +1055,7 @@ class ZK(object):
                 return False
             uid = users[0].uid
         command = const.CMD_DELETE_USER
-        command_string = pack('h', uid)
+        command_string = pack('I', uid)
         cmd_response = self.__send_command(command, command_string)
         if not cmd_response.get('status'):
             raise ZKErrorResponse("Can't delete user")
