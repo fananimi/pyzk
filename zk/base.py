@@ -1134,7 +1134,7 @@ class ZK(object):
             return []
         total_size = unpack("I",userdata[:4])[0]
         self.user_packet_size = total_size / self.users
-        if not self.user_packet_size in [28, 72]:
+        if not self.user_packet_size in [28, 72, 120]:
             if self.verbose: print("WRN packet size would be  %i" % self.user_packet_size)
         userdata = userdata[4:]
         if self.user_packet_size == 28:
@@ -1152,6 +1152,26 @@ class ZK(object):
                 users.append(user)
                 if self.verbose: print("[6]user:",uid, privilege, password, name, card, group_id, timezone, user_id)
                 userdata = userdata[28:]
+        elif self.user_packet_size == 120:
+            # NGTeco devices (e.g. NG-K4, NG-MB2) use an extended 120 byte
+            # record that stores first and last name separately instead of a
+            # single 24 byte name field. See issue #240.
+            while len(userdata) >= 120:
+                record = userdata.ljust(120, b'\x00')[:120]
+                uid, privilege, password = unpack('<HB8s', record[:11])
+                first_name = (record[35:59].split(b'\x00')[0]).decode(self.encoding, errors='ignore').strip()
+                last_name = (record[59:83].split(b'\x00')[0]).decode(self.encoding, errors='ignore').strip()
+                card = unpack('<I', record[83:87])[0]
+                user_id = (record[96:120].split(b'\x00')[0]).decode(self.encoding, errors='ignore').strip()
+                password = (password.split(b'\x00')[0]).decode(self.encoding, errors='ignore')
+                name = ("%s %s" % (first_name, last_name)).strip()
+                if uid > max_uid: max_uid = uid
+                if not name:
+                    name = "NN-%s" % user_id
+                user = User(uid, name, privilege, password, '', user_id, card)
+                users.append(user)
+                if self.verbose: print("[120]user:",uid, privilege, password, name, card, user_id)
+                userdata = userdata[120:]
         else:
             while len(userdata) >= 72:
                 uid, privilege, password, name, card, group_id, user_id = unpack('<HB8s24sIx7sx24s', userdata.ljust(72, b'\x00')[:72])
