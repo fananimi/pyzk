@@ -45,6 +45,8 @@ CMD_DELETE_UDATA    = 74    # Delete user’s short message
 CMD_DOORSTATE_RRQ   = 75    # Obtain the door condition
 CMD_WRITE_MIFARE    = 76    # Write the Mifare card
 CMD_EMPTY_MIFARE    = 78    # Clear the Mifare card
+CMD_VERIFY_WRQ      = 79    # Change verification style of a given user
+CMD_VERIFY_RRQ      = 80    # Read verification style of a given user
 _CMD_GET_USERTEMP   = 88    # (UNDOCUMENTED!) get an specific user template (uid, fid)
 _CMD_SAVE_USERTEMPS = 110   # (UNDOCUMENTED!) save user and multiple templates!
 _CMD_DEL_USER_TEMP  = 134   # (UNDOCUMENTED!) delete an specific user template (uid, fid)
@@ -113,3 +115,6 @@ FCT_UDATA           = 7
 
 MACHINE_PREPARE_DATA_1 = 20560 # 0x5050
 MACHINE_PREPARE_DATA_2 = 32130 # 0x7282
+
+
+VERIF_MODES = ['FP+PW+RF', 'FP', 'PIN', 'PW', 'RF', 'FP+PW', 'FP+RF', 'PW+RF', 'PIN&FP', 'FP&PW', 'FP&RF', 'PW&RF', 'FP&PW&RF', 'PIN&FP&PW', 'FP&RF+PIN'] 
